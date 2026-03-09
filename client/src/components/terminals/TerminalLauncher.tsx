@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Terminal, Play, Monitor, Code2, FolderOpen, Copy, Sparkles, ShieldOff } from 'lucide-react'
+import { Terminal, Play, Monitor, Code2, FolderOpen, Copy, Sparkles, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLaunchTerminal, useLaunchVSCode, useOpenFolder } from '@/hooks/useProjects'
 import { useTasks, type Task } from '@/hooks/useTasks'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { buildInProgressPrompt } from '@/lib/promptBuilder'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -70,6 +71,16 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
     toast.success('Context copied — paste in Claude')
   }
 
+  const inProgressCount = (tasks || []).filter(t => t.status === 'in_progress').length
+
+  const handleCopyInProgress = () => {
+    if (!projectPath || !projectName) return
+    const prompt = buildInProgressPrompt(tasks || [], projectName, projectPath, projectId, settings?.tasksDir || '')
+    if (!prompt) { toast.info('No in-progress tasks'); return }
+    navigator.clipboard.writeText(prompt)
+    toast.success(`Copied ${inProgressCount} in-progress task${inProgressCount > 1 ? 's' : ''} as prompt`)
+  }
+
   const claudeType = skipPermissions ? 'claude-yolo' : 'claude'
 
   const handleLaunchClaudeWithContext = () => {
@@ -107,6 +118,16 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
               <Copy className="h-3.5 w-3.5" />
               Copy Tasks Context
             </Button>
+            {inProgressCount > 0 && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={handleCopyInProgress}
+              >
+                <ClipboardList className="h-3.5 w-3.5" />
+                Copy In Progress ({inProgressCount})
+              </Button>
+            )}
           </div>
           <label className="flex items-center gap-2 px-1 cursor-pointer select-none">
             <input
