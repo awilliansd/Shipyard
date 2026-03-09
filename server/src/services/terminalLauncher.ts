@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
-export type TerminalType = 'claude' | 'dev' | 'shell';
+export type TerminalType = 'claude' | 'claude-yolo' | 'dev' | 'shell';
 
 async function detectDevCommand(projectPath: string): Promise<string | null> {
   try {
@@ -20,6 +20,9 @@ export async function launchTerminal(projectPath: string, type: TerminalType): P
   switch (type) {
     case 'claude':
       args.push('--title', 'Claude Code', 'cmd.exe', '/k', 'claude');
+      break;
+    case 'claude-yolo':
+      args.push('--title', 'Claude Code', 'cmd.exe', '/k', 'claude --dangerously-skip-permissions');
       break;
     case 'dev': {
       const devCmd = await detectDevCommand(projectPath);

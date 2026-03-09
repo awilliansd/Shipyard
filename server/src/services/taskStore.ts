@@ -31,7 +31,13 @@ async function writeTasks(projectId: string, tasks: Task[]): Promise<void> {
 }
 
 export async function getTasks(projectId: string): Promise<Task[]> {
-  return readTasks(projectId);
+  const tasks = await readTasks(projectId);
+  for (const t of tasks) {
+    if (!t.projectId) t.projectId = projectId;
+    if (!t.createdAt) t.createdAt = t.updatedAt || new Date().toISOString();
+    if (t.order == null) t.order = 0;
+  }
+  return tasks;
 }
 
 export async function getAllTasks(): Promise<Task[]> {
@@ -43,6 +49,11 @@ export async function getAllTasks(): Promise<Task[]> {
     if (!file.endsWith('.json')) continue;
     const projectId = file.replace('.json', '');
     const tasks = await readTasks(projectId);
+    for (const t of tasks) {
+      if (!t.projectId) t.projectId = projectId;
+      if (!t.createdAt) t.createdAt = t.updatedAt || new Date().toISOString();
+      if (t.order == null) t.order = 0;
+    }
     allTasks.push(...tasks);
   }
   return allTasks;

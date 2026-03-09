@@ -208,7 +208,7 @@
       "category": "freelas",
       "isGitRepo": true,
       "gitBranch": "main",
-      "gitDirty": false,
+      "gitDirty": true,
       "lastCommitDate": "2026-03-08T11:48:41-03:00",
       "lastCommitMessage": "feat(header): added desktop navigation with unread badge",
       "techStack": [
@@ -248,7 +248,8 @@
       "techStack": [
         "express"
       ],
-      "favorite": true
+      "favorite": true,
+      "lastOpenedAt": "2026-03-09T15:29:10.113Z"
     },
     {
       "id": "devdash",
@@ -256,12 +257,14 @@
       "path": "C:\\Code\\devdash",
       "category": "Code",
       "isGitRepo": true,
-      "gitBranch": "",
+      "gitBranch": "main",
       "gitDirty": true,
+      "lastCommitDate": "2026-03-09T12:23:11-03:00",
+      "lastCommitMessage": "first commit",
       "techStack": [],
       "favorite": true,
       "lastOpenedAt": "2026-03-09T15:09:34.032Z"
     }
   ],
-  "lastScannedAt": "2026-03-09T15:16:45.286Z"
+  "lastScannedAt": "2026-03-09T15:51:43.416Z"
 }

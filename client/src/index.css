@@ -58,3 +58,23 @@
     font-family: system-ui, -apple-system, sans-serif;
   }
 }
+
+/* Dark scrollbar */
+.scrollbar-dark::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background: hsl(240 3.7% 20%);
+  border-radius: 4px;
+}
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 3.7% 28%);
+}
+.scrollbar-dark {
+  scrollbar-color: hsl(240 3.7% 20%) transparent;
+  scrollbar-width: thin;
+}

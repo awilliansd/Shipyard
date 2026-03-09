@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 export interface Tab {
@@ -14,12 +14,32 @@ interface TabsContextType {
   switchTab: (id: string) => void
 }
 
+const STORAGE_KEY = 'devdash-tabs'
+
+function loadTabs(): Tab[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return []
+}
+
+function saveTabs(tabs: Tab[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tabs))
+}
+
 const TabsContext = createContext<TabsContextType | null>(null)
 
 export function TabsProvider({ children }: { children: ReactNode }) {
-  const [tabs, setTabs] = useState<Tab[]>([])
+  const [tabs, setTabs] = useState<Tab[]>(loadTabs)
   const location = useLocation()
   const navigate = useNavigate()
+  const closedRef = useRef(new Set<string>())
+
+  // Persist tabs to localStorage on change
+  useEffect(() => {
+    saveTabs(tabs)
+  }, [tabs])
 
   const activeTabId = useMemo(() => {
     const match = location.pathname.match(/^\/project\/(.+)$/)
@@ -27,13 +47,18 @@ export function TabsProvider({ children }: { children: ReactNode }) {
   }, [location.pathname])
 
   // Auto-add tab when navigating to a project URL directly
+  // (skip tabs that were just intentionally closed)
   useEffect(() => {
-    if (activeTabId && !tabs.some(t => t.id === activeTabId)) {
-      setTabs(prev => [...prev, { id: activeTabId, path: `/project/${activeTabId}` }])
+    if (activeTabId && !closedRef.current.has(activeTabId)) {
+      setTabs(prev => {
+        if (prev.some(t => t.id === activeTabId)) return prev
+        return [...prev, { id: activeTabId, path: `/project/${activeTabId}` }]
+      })
     }
-  }, [activeTabId, tabs])
+  }, [activeTabId])
 
   const openTab = useCallback((projectId: string) => {
+    closedRef.current.delete(projectId)
     setTabs(prev => {
       if (prev.some(t => t.id === projectId)) return prev
       return [...prev, { id: projectId, path: `/project/${projectId}` }]
@@ -42,17 +67,21 @@ export function TabsProvider({ children }: { children: ReactNode }) {
   }, [navigate])
 
   const closeTab = useCallback((id: string) => {
+    closedRef.current.add(id)
+
     setTabs(prev => {
       const idx = prev.findIndex(t => t.id === id)
+      if (idx === -1) return prev
       const next = prev.filter(t => t.id !== id)
 
-      // If closing the active tab, switch to adjacent or go home
+      // If closing the active tab, navigate to adjacent or home
       if (id === activeTabId) {
         if (next.length > 0) {
           const newIdx = Math.min(idx, next.length - 1)
-          navigate(next[newIdx].path)
+          // Use setTimeout to navigate after state update
+          setTimeout(() => navigate(next[newIdx].path), 0)
         } else {
-          navigate('/')
+          setTimeout(() => navigate('/'), 0)
         }
       }
 

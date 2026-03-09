@@ -143,6 +143,21 @@ export async function gitRoutes(app: FastifyInstance) {
     }
   );
 
+  app.post<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/generate-commit-message',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const message = await gitService.generateCommitMessage(path);
+        return { message };
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
   app.get<{ Params: { projectId: string } }>(
     '/api/projects/:projectId/git/branches',
     async (request, reply) => {

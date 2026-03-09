@@ -22,7 +22,7 @@ export function Workspace() {
   return (
     <div className="flex-1 overflow-hidden flex">
       {/* Tasks - main area */}
-      <div className="flex-1 overflow-y-auto p-6 min-w-0">
+      <div className="flex-1 overflow-y-auto p-6 min-w-0 scrollbar-dark">
         {/* Compact project info bar */}
         <div className="flex items-center gap-3 mb-4">
           <p className="text-xs text-muted-foreground truncate">{project.path}</p>
@@ -38,7 +38,7 @@ export function Workspace() {
       </div>
 
       {/* Sidebar - 1/4 width */}
-      <div className="w-72 xl:w-80 border-l overflow-y-auto p-4 space-y-6 shrink-0 bg-card/50">
+      <div className="w-72 xl:w-80 border-l overflow-y-auto p-4 space-y-6 shrink-0 bg-card/50 scrollbar-dark">
         <TerminalLauncher projectId={project.id} projectPath={project.path} projectName={project.name} />
         {project.isGitRepo && (
           <GitPanel projectId={project.id} />

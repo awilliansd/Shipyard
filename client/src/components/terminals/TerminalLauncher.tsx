@@ -1,7 +1,9 @@
-import { Terminal, Play, Monitor, Code2, FolderOpen, Copy, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Terminal, Play, Monitor, Code2, FolderOpen, Copy, Sparkles, ShieldOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLaunchTerminal, useLaunchVSCode, useOpenFolder } from '@/hooks/useProjects'
 import { useTasks, type Task } from '@/hooks/useTasks'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface TerminalLauncherProps {
@@ -54,6 +56,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const launchVSCode = useLaunchVSCode()
   const openFolder = useOpenFolder()
   const { data: tasks } = useTasks(projectId)
+  const [skipPermissions, setSkipPermissions] = useState(false)
 
   const handleCopyContext = () => {
     if (!projectPath || !projectName) return
@@ -62,6 +65,8 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
     toast.success('Context copied — paste in Claude')
   }
 
+  const claudeType = skipPermissions ? 'claude-yolo' : 'claude'
+
   const handleLaunchClaudeWithContext = () => {
     // Copy context first, then launch Claude
     if (projectPath && projectName) {
@@ -69,7 +74,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
       navigator.clipboard.writeText(context)
     }
     launchTerminal.mutate(
-      { projectId, type: 'claude' },
+      { projectId, type: claudeType },
       { onSuccess: () => toast.success('Claude opened — context is in your clipboard, just paste') }
     )
   }
@@ -98,9 +103,15 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
               Copy Tasks Context
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground/60 px-1">
-            Copies project path, tasks file location, and current tasks to clipboard.
-          </p>
+          <label className="flex items-center gap-2 px-1 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={skipPermissions}
+              onChange={e => setSkipPermissions(e.target.checked)}
+              className="rounded border-muted-foreground/30"
+            />
+            <span className="text-[10px] text-muted-foreground">Skip permissions (--dangerously-skip-permissions)</span>
+          </label>
         </div>
       )}
 
@@ -112,7 +123,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
             variant="ghost"
             className="w-full justify-start gap-2 h-8 text-xs"
             onClick={() => launchTerminal.mutate(
-              { projectId, type: 'claude' },
+              { projectId, type: claudeType },
               { onSuccess: () => toast.success('Launched Claude Code') }
             )}
           >

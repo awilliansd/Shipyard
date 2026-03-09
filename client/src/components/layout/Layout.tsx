@@ -1,13 +1,26 @@
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TabBar } from './TabBar'
 import { TabsProvider } from '@/hooks/useTabs'
 
+const SIDEBAR_KEY = 'devdash-sidebar-collapsed'
+
 export function Layout() {
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true')
+
+  const toggle = () => {
+    setCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem(SIDEBAR_KEY, String(next))
+      return next
+    })
+  }
+
   return (
     <TabsProvider>
       <div className="flex h-screen overflow-hidden">
-        <Sidebar />
+        <Sidebar collapsed={collapsed} onToggle={toggle} />
         <main className="flex-1 flex flex-col overflow-hidden">
           <TabBar />
           <Outlet />

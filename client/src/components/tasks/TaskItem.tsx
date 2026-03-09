@@ -1,5 +1,4 @@
-import { GripVertical, Pencil, Trash2, Copy, Check, Circle, Clock, AlertTriangle, ArrowUp, Minus } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { Pencil, Trash2, Copy, Check, Circle, AlertTriangle, ArrowUp, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -31,11 +30,12 @@ export function TaskItem({ task, projectName, onEdit, dragListeners }: TaskItemP
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
 
-  const priority = priorityConfig[task.priority]
-  const status = statusConfig[task.status]
+  const priority = priorityConfig[task.priority] || priorityConfig.medium
+  const status = statusConfig[task.status] || statusConfig.todo
   const PriorityIcon = priority.icon
 
-  const handleStatusToggle = () => {
+  const handleStatusToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
     const nextStatus = task.status === 'done' ? 'todo' :
                        task.status === 'todo' ? 'in_progress' :
                        task.status === 'in_progress' ? 'done' : 'todo'
@@ -46,74 +46,61 @@ export function TaskItem({ task, projectName, onEdit, dragListeners }: TaskItemP
     })
   }
 
-  const handleCopyPrompt = () => {
+  const handleCopyPrompt = (e: React.MouseEvent) => {
+    e.stopPropagation()
     const prompt = task.promptTemplate ||
       `Task: ${task.title}\n${task.description ? `\nDescription: ${task.description}` : ''}${projectName ? `\nProject: ${projectName}` : ''}`
     navigator.clipboard.writeText(prompt)
     toast.success('Copied to clipboard')
   }
 
-  const handleDelete = () => {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
     deleteTask.mutate({ projectId: task.projectId, taskId: task.id })
   }
 
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onEdit(task)
+  }
+
   return (
-    <div className={cn(
-      'group flex items-start gap-3 p-3 rounded-lg border bg-card transition-colors hover:border-primary/30',
-      task.status === 'done' && 'opacity-60'
-    )}>
-      <button className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/50" {...dragListeners}>
-        <GripVertical className="h-4 w-4" />
-      </button>
-
-      <button onClick={handleStatusToggle} className="mt-0.5 shrink-0">
+    <div
+      className={cn(
+        'group flex items-start gap-2 p-2 rounded-lg border bg-card transition-colors hover:border-primary/30 cursor-grab active:cursor-grabbing',
+        task.status === 'done' && 'opacity-60'
+      )}
+      {...dragListeners}
+    >
+      <button onClick={handleStatusToggle} className="shrink-0 mt-0.5">
         {task.status === 'done' ? (
-          <Check className="h-4 w-4 text-green-500" />
+          <Check className="h-3.5 w-3.5 text-green-500" />
         ) : (
-          <Circle className="h-4 w-4 text-muted-foreground" />
+          <Circle className="h-3.5 w-3.5 text-muted-foreground" />
         )}
       </button>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <PriorityIcon className={cn('h-3.5 w-3.5 shrink-0', priority.color)} />
-          <span className={cn('text-sm font-medium', task.status === 'done' && 'line-through')}>
-            {task.title}
-          </span>
-          <Badge variant={status.variant} className="text-[10px] px-1.5 py-0 shrink-0">
-            {status.label}
-          </Badge>
-        </div>
-        {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
-        )}
-        <div className="flex items-center gap-3 mt-1">
-          <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-            <Clock className="h-3 w-3" />
-            Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
-          </span>
-          {task.status === 'in_progress' && task.inProgressAt && (
-            <span className="text-[10px] text-yellow-500/80">
-              Started {formatDistanceToNow(new Date(task.inProgressAt), { addSuffix: true })}
-            </span>
-          )}
-          {task.status === 'done' && task.doneAt && (
-            <span className="text-[10px] text-green-500/80">
-              Done {formatDistanceToNow(new Date(task.doneAt), { addSuffix: true })}
-            </span>
-          )}
-        </div>
-      </div>
+      <PriorityIcon className={cn('h-3 w-3 shrink-0 mt-1', priority.color)} />
 
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyPrompt} title="Copy as prompt">
-          <Copy className="h-3.5 w-3.5" />
+      <span className={cn('text-sm line-clamp-2 min-w-0', task.status === 'done' && 'line-through')}>
+        {task.title}
+      </span>
+
+      {projectName && (
+        <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 ml-auto">
+          {projectName}
+        </Badge>
+      )}
+
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-auto">
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyPrompt} title="Copy as prompt">
+          <Copy className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(task)} title="Edit">
-          <Pencil className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleEdit} title="Edit">
+          <Pencil className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={handleDelete} title="Delete">
-          <Trash2 className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={handleDelete} title="Delete">
+          <Trash2 className="h-3 w-3" />
         </Button>
       </div>
     </div>

@@ -1,3 +1,253 @@
 {
-  "tasks": []
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Taxa 12% com dois modos (visible/included)",
+      "description": "Taxa do Canoe de 12% com 2 modos: Taxa Visivel (valor + 12% pro cliente, detalhamento no checkout) e Taxa Embutida (valor cheio, 12% descontado do operador no repasse). Implementado com fee_mode visible/included no CreateVessel e calculo no Stripe checkout.",
+      "status": "done",
+      "priority": "high",
+      "tags": [
+        "pagamento",
+        "stripe"
+      ]
+    },
+    {
+      "id": "2",
+      "title": "Login Google como primeira opcao",
+      "description": "Botao ENTRAR COM O GOOGLE aparece primeiro na tela de login, seguido de 'ou continue com email' e campos de email/senha.",
+      "status": "done",
+      "priority": "medium",
+      "tags": [
+        "auth",
+        "ux"
+      ]
+    },
+    {
+      "id": "3",
+      "title": "Chat com gating de reserva ativa",
+      "description": "Chat funciona apenas com reserva ativa (pending/confirmed). Auto-fecha apos viagem concluida. Auto-reabre com nova booking. Modo read-only quando conversa fechada.",
+      "status": "done",
+      "priority": "high",
+      "tags": [
+        "chat",
+        "reservas"
+      ]
+    },
+    {
+      "id": "4",
+      "title": "Pagamento parcial em reservas manuais",
+      "description": "Reservas manuais suportam pagamento parcial. Status: Pago, Parcial, Aguardando link, Nao pago. Operador pode confirmar pagamentos externos com valor e metodo (Pix, Dinheiro, Cartao, Transferencia).",
+      "status": "done",
+      "priority": "high",
+      "tags": [
+        "pagamento",
+        "reservas-manuais"
+      ]
+    },
+    {
+      "id": "5",
+      "title": "Link 'Ler avaliacoes' no anuncio",
+      "description": "Botao 'Ler todas avaliacoes' aparece ao lado da nota de avaliacao no VesselDetail. Clicavel com scroll suave ate a secao de reviews.",
+      "status": "done",
+      "priority": "low",
+      "tags": [
+        "ux",
+        "reviews"
+      ]
+    },
+    {
+      "id": "6",
+      "title": "QR Code Scanner basico",
+      "description": "QRCodeScanner implementado com Html5Qrcode. Valida checkin via edge function validate-qr-checkin. Integrado na pagina HostCheckIn.",
+      "status": "done",
+      "priority": "medium",
+      "tags": [
+        "qrcode",
+        "checkin"
+      ]
+    },
+    {
+      "id": "7",
+      "title": "Painel Administrador",
+      "description": "AdminDashboard implementado com ProtectedRoute (requiredRole=admin). Funcoes: gerenciar reservas, aprovar embarcacoes, moderar reviews, gerenciar usuarios, configurar comissao.",
+      "status": "done",
+      "priority": "high",
+      "tags": [
+        "admin"
+      ]
+    },
+    {
+      "id": "8",
+      "title": "Fluxo pos-aprovacao: datas bloqueadas por padrao",
+      "description": "Apos admin aprovar embarcacao, todas as datas devem vir bloqueadas (cinza/nao clicavel). Operador libera datas e define precos em 'Datas e Precos'. Embarcacao so aparece no Navegar quando tiver datas liberadas. Impedir que va pro ar sem configuracao completa.",
+      "status": "pending",
+      "priority": "high",
+      "tags": [
+        "embarcacoes",
+        "calendario",
+        "ux"
+      ]
+    },
+    {
+      "id": "9",
+      "title": "Perfil do usuario ao clicar no nome",
+      "description": "Quando usuario clica no proprio nome (onde mostra perfil logado), deve navegar para pagina de perfil. MyProfile e PublicProfile existem mas a navegacao ao clicar no nome precisa ser verificada/completada.",
+      "status": "pending",
+      "priority": "medium",
+      "tags": [
+        "perfil",
+        "navegacao"
+      ]
+    },
+    {
+      "id": "10",
+      "title": "QR Scanner: selecao de embarcacao + confirmar/cancelar passeio",
+      "description": "Scanner existe mas precisa: (1) Lista de embarcacoes do operador para selecionar qual embarque. (2) Validar se QR e do dia correto (msg de erro se for de outro dia). (3) Botao Confirmar Passeio liberado apenas no dia. (4) Botao Cancelar Passeio sempre disponivel com motivo + opcoes pro cliente: Reagendar ou Reembolso (Stripe refund imediato).",
+      "status": "pending",
+      "priority": "high",
+      "tags": [
+        "qrcode",
+        "checkin",
+        "passeios"
+      ]
+    },
+    {
+      "id": "11",
+      "title": "Alteracao de data de reserva (cliente + operador)",
+      "description": "Host pode sugerir data alternativa (parcialmente implementado). Falta: (1) Cliente poder solicitar alteracao de data em Minhas Viagens. (2) Operador aceitar/recusar alteracao do cliente. (3) Operador sugerir alteracao pro cliente (ex: dia com mais passageiros). (4) Fluxo completo de aceite/recusa bilateral.",
+      "status": "pending",
+      "priority": "high",
+      "tags": [
+        "reservas",
+        "datas"
+      ]
+    },
+    {
+      "id": "12",
+      "title": "Melhorar fonte - mais clara de ler",
+      "description": "A fonte usada no Lovable era melhor e mais clara de ler. Investigar qual fonte era usada no Lovable e avaliar troca ou ajuste de peso/tamanho das fontes atuais (DM Serif Display + DM Sans).",
+      "status": "inbox",
+      "priority": "medium",
+      "tags": [
+        "ui",
+        "fonte"
+      ]
+    },
+    {
+      "id": "13",
+      "title": "Mover icones voltar/favoritar/compartilhar pro card principal",
+      "description": "No VesselDetail, a faixa com setinha de voltar (esquerda) e coracao+compartilhar (direita) esta em branco separada. Mover esses icones para dentro do mesmo quadro/card da foto para melhorar aspecto visual.",
+      "status": "inbox",
+      "priority": "low",
+      "tags": [
+        "ui",
+        "vessel-detail"
+      ]
+    },
+    {
+      "id": "14",
+      "title": "Botao Denunciar abaixo de Falar com operador",
+      "description": "Adicionar botao 'Denunciar' no VesselDetail, posicionado abaixo do botao 'Falar com operador'. Criar fluxo de denuncia (motivo, descricao) e armazenar para revisao do admin.",
+      "status": "inbox",
+      "priority": "medium",
+      "tags": [
+        "moderacao",
+        "vessel-detail"
+      ]
+    },
+    {
+      "id": "15",
+      "title": "Melhorar layout fotos web + swipe",
+      "description": "Fotos no VesselDetail web estao muito grandes, dificultando visualizacao. Implementar: (1) Galeria menor/mais compacta no desktop. (2) Suporte a swipe/deslizar com dedo no mobile. (3) Nao depender apenas de clique para navegar fotos.",
+      "status": "inbox",
+      "priority": "medium",
+      "tags": [
+        "ui",
+        "galeria",
+        "mobile"
+      ]
+    },
+    {
+      "id": "16",
+      "title": "Descricao da taxa em Datas e Precos",
+      "description": "Na secao onde operador escolhe taxa visivel/embutida (mover para Datas e Precos), adicionar texto: 'Taxa da plataforma - Para manter o funcionamento e evolucao da plataforma, o CANOE cobra uma taxa de 12% sobre reservas realizadas atraves do nosso sistema. Nao cobramos nenhuma taxa sobre reservas manuais registradas por voce. Como voce prefere mostrar o preco ao cliente?' Seguido das opcoes com exemplos.",
+      "status": "inbox",
+      "priority": "medium",
+      "tags": [
+        "ux",
+        "taxas",
+        "datas-precos"
+      ]
+    },
+    {
+      "id": "17",
+      "title": "Bug: convite colaborador nao funciona direito",
+      "description": "Problemas reportados: (1) Convite enviado por email mas notificacao nao chega no mobile (sininho nao aparece no modo mobile). (2) Apos aceitar convite no web, embarcacao nao aparece em Minhas Embarcacoes do colaborador.",
+      "status": "inbox",
+      "priority": "high",
+      "tags": [
+        "bug",
+        "colaboradores",
+        "notificacoes"
+      ]
+    },
+    {
+      "id": "18",
+      "title": "Arredondar valores pro real de cima (sem centavos)",
+      "description": "Precos estao mostrando casa dos centavos. Arredondar todos os valores exibidos para o real de cima (Math.ceil). Aplicar em: cards do Navegar, VesselDetail, checkout, booking details.",
+      "status": "inbox",
+      "priority": "medium",
+      "tags": [
+        "ui",
+        "precos"
+      ]
+    },
+    {
+      "id": "19",
+      "title": "Bug: erro na avaliacao",
+      "description": "Avaliacao esta dando erro ao ser submetida. Investigar ReviewForm e VesselReviews para identificar o problema.",
+      "status": "inbox",
+      "priority": "high",
+      "tags": [
+        "bug",
+        "reviews"
+      ]
+    },
+    {
+      "id": "20",
+      "title": "Notificacao de reserva abrir detalhe (nao calendario)",
+      "description": "Quando operador clica na notificacao de nova reserva, deve abrir o detalhamento da reserva (HostBookingDetail), nao o calendario. Apos reserva, exibir telefone de contato dos dois (operador pro cliente e cliente pro operador) nas informacoes.",
+      "status": "inbox",
+      "priority": "high",
+      "tags": [
+        "notificacoes",
+        "reservas",
+        "contato"
+      ]
+    },
+    {
+      "id": "21",
+      "title": "Bug: editar embarcacao faltando campos e dando erro",
+      "description": "Ao clicar Editar em Minhas Embarcacoes: (1) Faltam campos como tipo hibrido/privativo e outras opcoes. (2) Editar embarcacao da erro. Verificar CreateVessel no modo edicao (isEditing) e garantir todos os campos disponiveis.",
+      "status": "inbox",
+      "priority": "high",
+      "tags": [
+        "bug",
+        "embarcacoes",
+        "edicao"
+      ]
+    },
+    {
+      "id": "22",
+      "title": "Perfil do operador no checkout/pagina de reserva",
+      "description": "Apos botao Reservar, exibir quem esta operando o passeio (foto, nome da pessoa/empresa). Clicavel para ver perfil publico. Pode listar multiplos operadores (ex: 'Operadores: Claudio, Andressa'). SEM telefone antes da reserva (telefone so apos reserva efetuada). Referencia: AirBnB faz similar para credibilidade.",
+      "status": "inbox",
+      "priority": "medium",
+      "tags": [
+        "ux",
+        "perfil",
+        "checkout"
+      ]
+    }
+  ]
 }

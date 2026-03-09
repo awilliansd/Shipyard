@@ -101,7 +101,7 @@ function DraggableTaskItem({ task, projectName, onEdit }: { task: Task; projectN
         task={task}
         projectName={projectName}
         onEdit={onEdit}
-        dragListeners={listeners}
+        dragListeners={listeners as unknown as Record<string, Function>}
       />
     </div>
   )

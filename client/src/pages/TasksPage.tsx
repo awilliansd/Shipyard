@@ -92,10 +92,12 @@ function GlobalTaskCard({ task, project, onStatusToggle, onDelete }: {
               </Badge>
             </Link>
           )}
-          <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-            <Clock className="h-2.5 w-2.5" />
-            {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
-          </span>
+          {task.createdAt && !isNaN(new Date(task.createdAt).getTime()) && (
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+              <Clock className="h-2.5 w-2.5" />
+              {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+            </span>
+          )}
         </div>
       </div>
 
