@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import type { Task, TasksFile } from '../types/index.js';
 
 const DATA_DIR = resolve(import.meta.dirname, '../../../data');
-const TASKS_DIR = join(DATA_DIR, 'tasks');
+export const TASKS_DIR = join(DATA_DIR, 'tasks');
 
 async function ensureTasksDir(): Promise<void> {
   await mkdir(TASKS_DIR, { recursive: true });

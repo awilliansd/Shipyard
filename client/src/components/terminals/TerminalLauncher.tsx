@@ -3,6 +3,8 @@ import { Terminal, Play, Monitor, Code2, FolderOpen, Copy, Sparkles, ShieldOff }
 import { Button } from '@/components/ui/button'
 import { useLaunchTerminal, useLaunchVSCode, useOpenFolder } from '@/hooks/useProjects'
 import { useTasks, type Task } from '@/hooks/useTasks'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -15,9 +17,9 @@ interface TerminalLauncherProps {
 const priorityLabel = { urgent: 'URGENT', high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }
 const statusLabel = { backlog: 'BACKLOG', todo: 'TODO', in_progress: 'IN_PROGRESS', done: 'DONE' }
 
-function buildClaudeContext(projectName: string, projectPath: string, projectId: string, tasks: Task[]) {
-  const dataPath = 'C:\\Code\\devdash\\data\\tasks'
-  const tasksFile = `${dataPath}\\${projectId}.json`
+function buildClaudeContext(projectName: string, projectPath: string, projectId: string, tasks: Task[], tasksDir: string) {
+  const sep = tasksDir.includes('\\') ? '\\' : '/'
+  const tasksFile = `${tasksDir}${sep}${projectId}.json`
 
   const lines = [
     `Project: ${projectName}`,
@@ -56,13 +58,14 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const launchVSCode = useLaunchVSCode()
   const openFolder = useOpenFolder()
   const { data: tasks } = useTasks(projectId)
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   const [skipPermissions, setSkipPermissions] = useState(() => {
     try { return localStorage.getItem('devdash:skipPermissions') === 'true' } catch { return false }
   })
 
   const handleCopyContext = () => {
     if (!projectPath || !projectName) return
-    const context = buildClaudeContext(projectName, projectPath, projectId, tasks || [])
+    const context = buildClaudeContext(projectName, projectPath, projectId, tasks || [], settings?.tasksDir || '')
     navigator.clipboard.writeText(context)
     toast.success('Context copied — paste in Claude')
   }
@@ -72,7 +75,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const handleLaunchClaudeWithContext = () => {
     // Copy context first, then launch Claude
     if (projectPath && projectName) {
-      const context = buildClaudeContext(projectName, projectPath, projectId, tasks || [])
+      const context = buildClaudeContext(projectName, projectPath, projectId, tasks || [], settings?.tasksDir || '')
       navigator.clipboard.writeText(context)
     }
     launchTerminal.mutate(

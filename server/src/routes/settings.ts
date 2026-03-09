@@ -1,11 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { getSettings } from '../services/settingsStore.js';
+import { TASKS_DIR } from '../services/taskStore.js';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 
 export async function settingsRoutes(app: FastifyInstance) {
   app.get('/api/settings', async () => {
-    return getSettings();
+    return { ...getSettings(), tasksDir: TASKS_DIR };
   });
 
   // List subdirectories of a given path (for folder browser)
@@ -18,7 +19,7 @@ export async function settingsRoutes(app: FastifyInstance) {
         const dirs: { name: string; path: string }[] = [];
 
         for (const entry of entries) {
-          if (entry.startsWith('.') || entry === 'node_modules' || entry === '$Recycle.Bin' || entry === 'System Volume Information') continue;
+          if (entry.startsWith('.') || entry === 'node_modules' || entry === '$Recycle.Bin' || entry === 'System Volume Information' || entry === 'lost+found') continue;
           const fullPath = join(dirPath, entry);
           try {
             const s = await stat(fullPath);

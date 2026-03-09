@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Folder, ChevronRight, ArrowUp, Loader2, HardDrive, Check, X } from 'lucide-react'
+import { Folder, ChevronRight, ArrowUp, Loader2, HardDrive, Home, Check, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
@@ -25,16 +25,19 @@ interface FolderBrowserMultiProps {
 
 type FolderBrowserProps = FolderBrowserSingleProps | FolderBrowserMultiProps
 
-const DRIVES = ['C:\\', 'D:\\', 'E:\\']
+const isWindows = navigator.platform.startsWith('Win')
+const SEP = isWindows ? '\\' : '/'
+const ROOT = isWindows ? 'C:\\' : '/'
+const HOME = isWindows ? 'C:\\Users' : '/home'
 
 export function FolderBrowser(props: FolderBrowserProps) {
   const { open, onOpenChange, title = 'Select Folder', multiSelect } = props
 
-  const [currentPath, setCurrentPath] = useState('C:\\')
+  const [currentPath, setCurrentPath] = useState(HOME)
   const [directories, setDirectories] = useState<{ name: string; path: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [pathInput, setPathInput] = useState('C:\\')
+  const [pathInput, setPathInput] = useState(HOME)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const loadDir = async (path: string) => {
@@ -61,9 +64,16 @@ export function FolderBrowser(props: FolderBrowserProps) {
   }, [open])
 
   const goUp = () => {
-    const parent = currentPath.replace(/\\[^\\]+\\?$/, '\\')
-    if (parent !== currentPath && parent.length >= 3) {
-      loadDir(parent)
+    if (isWindows) {
+      const parent = currentPath.replace(/\\[^\\]+\\?$/, '\\')
+      if (parent !== currentPath && parent.length >= 3) {
+        loadDir(parent)
+      }
+    } else {
+      const parent = currentPath.replace(/\/[^/]+\/?$/, '') || '/'
+      if (parent !== currentPath) {
+        loadDir(parent)
+      }
     }
   }
 
@@ -100,6 +110,11 @@ export function FolderBrowser(props: FolderBrowserProps) {
     onOpenChange(false)
   }
 
+  const getDisplayName = (path: string) => {
+    const parts = path.split(SEP).filter(Boolean)
+    return parts.pop() || path
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
@@ -121,20 +136,26 @@ export function FolderBrowser(props: FolderBrowserProps) {
             />
           </div>
 
-          {/* Quick drives */}
+          {/* Quick nav */}
           <div className="flex gap-1">
-            {DRIVES.map(d => (
-              <Button
-                key={d}
-                variant={currentPath.startsWith(d) ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={() => loadDir(d)}
-              >
-                <HardDrive className="h-3 w-3" />
-                {d.replace('\\', '')}
-              </Button>
-            ))}
+            <Button
+              variant={currentPath === ROOT ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={() => loadDir(ROOT)}
+            >
+              <HardDrive className="h-3 w-3" />
+              {isWindows ? 'C:' : '/'}
+            </Button>
+            <Button
+              variant={currentPath === HOME ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={() => loadDir(HOME)}
+            >
+              <Home className="h-3 w-3" />
+              Home
+            </Button>
           </div>
 
           {/* Directory listing */}
@@ -203,17 +224,14 @@ export function FolderBrowser(props: FolderBrowserProps) {
               <div className="space-y-1.5">
                 <span className="text-xs text-muted-foreground">Selected ({selected.size}):</span>
                 <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                  {Array.from(selected).map(p => {
-                    const name = p.split('\\').filter(Boolean).pop() || p
-                    return (
-                      <Badge key={p} variant="secondary" className="gap-1 text-xs pr-1">
-                        {name}
-                        <button onClick={() => removeSelected(p)} className="hover:text-destructive">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )
-                  })}
+                  {Array.from(selected).map(p => (
+                    <Badge key={p} variant="secondary" className="gap-1 text-xs pr-1">
+                      {getDisplayName(p)}
+                      <button onClick={() => removeSelected(p)} className="hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
                 </div>
               </div>
             ) : (

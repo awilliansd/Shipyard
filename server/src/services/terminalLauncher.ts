@@ -1,8 +1,11 @@
 import { spawn } from 'child_process';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { platform } from 'os';
 
 export type TerminalType = 'claude' | 'claude-yolo' | 'dev' | 'shell';
+
+const isLinux = platform() === 'linux';
 
 async function detectDevCommand(projectPath: string): Promise<string | null> {
   try {
@@ -14,7 +17,49 @@ async function detectDevCommand(projectPath: string): Promise<string | null> {
   return null;
 }
 
+function spawnDetached(cmd: string, args: string[], useShell = false) {
+  spawn(cmd, args, {
+    detached: true,
+    stdio: 'ignore',
+    shell: useShell,
+  }).unref();
+}
+
+function launchLinuxTerminal(projectPath: string, title: string, command?: string) {
+  // Try gnome-terminal first, fall back to x-terminal-emulator
+  const args = ['--title', title, '--working-directory', projectPath];
+  if (command) {
+    args.push('--', 'bash', '-c', `${command}; exec bash`);
+  }
+  spawnDetached('gnome-terminal', args);
+}
+
 export async function launchTerminal(projectPath: string, type: TerminalType): Promise<void> {
+  if (isLinux) {
+    switch (type) {
+      case 'claude':
+        launchLinuxTerminal(projectPath, 'Claude Code', 'claude');
+        break;
+      case 'claude-yolo':
+        launchLinuxTerminal(projectPath, 'Claude Code', 'claude --dangerously-skip-permissions');
+        break;
+      case 'dev': {
+        const devCmd = await detectDevCommand(projectPath);
+        if (devCmd) {
+          launchLinuxTerminal(projectPath, 'Dev Server', devCmd);
+        } else {
+          launchLinuxTerminal(projectPath, 'Dev Server');
+        }
+        break;
+      }
+      case 'shell':
+        launchLinuxTerminal(projectPath, 'Shell');
+        break;
+    }
+    return;
+  }
+
+  // Windows: wt.exe + cmd.exe
   const args: string[] = ['-w', '0', 'nt', '-d', projectPath];
 
   switch (type) {
@@ -38,25 +83,17 @@ export async function launchTerminal(projectPath: string, type: TerminalType): P
       break;
   }
 
-  spawn('wt.exe', args, {
-    detached: true,
-    stdio: 'ignore',
-    shell: false,
-  }).unref();
+  spawnDetached('wt.exe', args);
 }
 
 export async function launchVSCode(projectPath: string): Promise<void> {
-  spawn('code', [projectPath], {
-    detached: true,
-    stdio: 'ignore',
-    shell: true,
-  }).unref();
+  spawnDetached('code', [projectPath], true);
 }
 
 export async function openFolder(projectPath: string): Promise<void> {
-  spawn('explorer.exe', [projectPath], {
-    detached: true,
-    stdio: 'ignore',
-    shell: false,
-  }).unref();
+  if (isLinux) {
+    spawnDetached('xdg-open', [projectPath]);
+  } else {
+    spawnDetached('explorer.exe', [projectPath]);
+  }
 }

@@ -59,6 +59,9 @@ export const api = {
   addProjects: (paths: string[]) => request<{ projects: any[] }>('/projects/add', { method: 'POST', body: JSON.stringify({ paths }) }),
   removeProject: (path: string) => request<{ projects: any[] }>('/projects/remove', { method: 'POST', body: JSON.stringify({ path }) }),
 
+  // Settings
+  getSettings: () => request<{ tasksDir: string }>('/settings'),
+
   // Browse filesystem
   browse: (path: string) => request<{ directories: { name: string; path: string }[] }>('/browse', { method: 'POST', body: JSON.stringify({ path }) }),
 };

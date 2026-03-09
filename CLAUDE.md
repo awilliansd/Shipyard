@@ -6,11 +6,21 @@ Dashboard web local (localhost) para centralizar gerenciamento de projetos, tare
 
 ```bash
 pnpm dev          # Inicia client (5421) + server (5420)
+./devdash.sh      # Linux: inicia server + abre browser
 devdash           # Alias bash (se configurado em ~/.bashrc)
-devdash.cmd       # Batch file na raiz do projeto
+devdash.cmd       # Windows: batch file na raiz do projeto
 ```
 
-Shortcut no Start Menu do Windows: pesquisar "DevDash".
+No Ubuntu, pesquisar "DevDash" no Activities/App Grid abre um gnome-terminal com o servidor + browser.
+Atalho desktop: `~/.local/share/applications/devdash.desktop`
+
+### Requisitos (Ubuntu/Linux)
+- Node.js >= 18 (recomendado via nvm)
+- pnpm (`npm install -g pnpm`)
+- git
+- gnome-terminal (instalado por padrao no Ubuntu/GNOME)
+- xdg-open (instalado por padrao) — para abrir pastas no file manager
+- VS Code (`code`) — opcional, para o launcher "Open in VS Code"
 
 ## Stack
 
@@ -25,7 +35,7 @@ Shortcut no Start Menu do Windows: pesquisar "DevDash".
 ## Estrutura do Projeto
 
 ```
-C:\Code\devdash/
+vibedash/
 ├── client/                        # Frontend (porta 5421)
 │   ├── src/
 │   │   ├── App.tsx                # Rotas: /, /tasks, /project/:id, /settings
@@ -76,13 +86,13 @@ C:\Code\devdash/
 │   │   │   ├── projects.ts        # GET/PATCH + POST scan/add/remove
 │   │   │   ├── tasks.ts           # CRUD + GET /api/tasks/all + POST reorder
 │   │   │   ├── git.ts             # status, diff, stage, unstage, commit, push, pull, log, branches
-│   │   │   ├── terminals.ts       # POST launch (wt.exe), vscode, folder (explorer.exe)
+│   │   │   ├── terminals.ts       # POST launch (gnome-terminal/wt.exe), vscode, folder
 │   │   │   └── settings.ts       # GET settings + POST /api/browse (filesystem navigation)
 │   │   ├── services/
 │   │   │   ├── projectDiscovery.ts  # Selecao manual de projetos (scan + add/remove)
 │   │   │   ├── gitService.ts        # Wrapper simple-git, GIT_TERMINAL_PROMPT=0
 │   │   │   ├── taskStore.ts         # CRUD JSON com timestamps de status
-│   │   │   ├── terminalLauncher.ts  # wt.exe com cmd.exe /k (NAO usa bash/WSL)
+│   │   │   ├── terminalLauncher.ts  # Multiplataforma: gnome-terminal (Linux) / wt.exe (Windows)
 │   │   │   └── settingsStore.ts     # data/settings.json com selectedProjects[]
 │   │   └── types/
 │   │       └── index.ts           # Project, Task, Settings, ProjectsCache, TasksFile
@@ -94,8 +104,8 @@ C:\Code\devdash/
 │   └── tasks/                     # Um JSON por projeto
 │       └── {projectId}.json       # { tasks: Task[] }
 │
-├── devdash.cmd                    # Atalho Windows: inicia server + abre browser
-├── devdash.sh                     # Atalho bash
+├── devdash.cmd                    # Windows: inicia server + abre browser
+├── devdash.sh                     # Linux: inicia server + abre browser (xdg-open)
 ├── pnpm-workspace.yaml            # packages: [client, server]
 └── package.json                   # Root: concurrently para pnpm dev
 ```
@@ -170,9 +180,9 @@ interface Settings {
 - `GET /api/projects/:id/git/branches` - Branches
 
 ### Terminais
-- `POST /api/terminals/launch` - Abre aba no Windows Terminal { projectId, type }
+- `POST /api/terminals/launch` - Abre terminal nativo { projectId, type } (gnome-terminal no Linux, wt.exe no Windows)
 - `POST /api/terminals/vscode` - Abre VS Code { projectId }
-- `POST /api/terminals/folder` - Abre Explorer { projectId }
+- `POST /api/terminals/folder` - Abre file manager { projectId } (xdg-open no Linux, explorer.exe no Windows)
 
 ### Sistema
 - `GET /api/settings` - Configuracoes
@@ -235,11 +245,17 @@ interface Settings {
 
 ## Detalhes Tecnicos Importantes
 
-### Terminais no Windows
-- Usa `wt.exe` com `cmd.exe /k` (NAO bash, para evitar trigger do WSL)
-- `spawn('wt', ['-w', '0', 'nt', '-d', path, '--title', title, 'cmd', '/k', command])`
-- VS Code: `code.cmd` via spawn
-- Abrir pasta: `explorer.exe`
+### Terminais (multiplataforma)
+O `terminalLauncher.ts` detecta o OS via `os.platform()` e usa comandos nativos:
+
+| Acao | Linux (Ubuntu/GNOME) | Windows |
+|------|---------------------|---------|
+| Abrir terminal | `gnome-terminal --working-directory` | `wt.exe` + `cmd.exe /k` |
+| Abrir VS Code | `code` (via shell) | `code` (via shell) |
+| Abrir pasta | `xdg-open` | `explorer.exe` |
+
+- No Linux, comandos executados no terminal usam `bash -c "cmd; exec bash"` para manter a aba aberta
+- No Windows, usa `cmd.exe /k` (NAO bash, para evitar trigger do WSL)
 
 ### Cache e Invalidacao
 - react-query com refetchInterval: 15s (tasks), 30s (projects), 5s (git status)
@@ -278,7 +294,7 @@ interface Settings {
 4. Se criar novo componente, adicione na arvore de estrutura
 5. Se mudar modelo de dados, atualize "Modelos de Dados"
 6. Dados persistem em JSON - nao introduza banco de dados sem discutir
-7. Terminais usam cmd.exe no Windows - nao usar bash (causa erro WSL)
+7. Terminais: no Windows usam cmd.exe (nao bash, causa erro WSL); no Linux usam gnome-terminal + bash
 8. Todas mutations de tarefas devem invalidar `['tasks', 'all']` alem do cache do projeto
 9. Novos hooks devem seguir o padrao de `useTasks.ts` (react-query + api wrapper)
 10. Componentes UI usam shadcn/ui - rodar `npx shadcn@latest add <component>` se precisar de novo
