@@ -79,7 +79,7 @@ export async function getBranches(projectPath: string) {
   return git.branch();
 }
 
-export async function getMainBranchLastCommit(projectPath: string): Promise<{ hash: string; message: string; date: string; author_name: string } | null> {
+export async function getMainBranchLastCommit(projectPath: string): Promise<{ hash: string; message: string; date: string; author_name: string; isMerged: boolean } | null> {
   const git = getGit(projectPath);
   try {
     const branches = await git.branch();
@@ -91,7 +91,17 @@ export async function getMainBranchLastCommit(projectPath: string): Promise<{ ha
     const raw = await git.raw(['log', mainRef, '-1', '--format=%H%n%s%n%aI%n%an']);
     if (!raw.trim()) return null;
     const [hash, message, date, author_name] = raw.trim().split('\n');
-    return { hash, message, date, author_name };
+
+    // Check if main's last commit is already in the current branch
+    let isMerged = false;
+    try {
+      await git.raw(['merge-base', '--is-ancestor', hash, 'HEAD']);
+      isMerged = true;
+    } catch {
+      // exit code 1 = not ancestor, meaning main commit is NOT in current branch
+    }
+
+    return { hash, message, date, author_name, isMerged };
   } catch {
     return null;
   }

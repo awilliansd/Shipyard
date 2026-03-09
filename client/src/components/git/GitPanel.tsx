@@ -111,8 +111,8 @@ export function GitPanel({ projectId }: GitPanelProps) {
         )}
       </div>
 
-      {/* Main branch info */}
-      {mainCommitData?.commit && status?.current && status.current !== 'main' && status.current !== 'master' && (
+      {/* Main branch info — only show when current branch is behind main */}
+      {mainCommitData?.commit && !mainCommitData.commit.isMerged && status?.current && status.current !== 'main' && status.current !== 'master' && (
         <div className="rounded border border-dashed border-muted-foreground/20 p-2 space-y-1">
           <div className="flex items-center gap-1.5">
             <GitBranch className="h-3 w-3 text-muted-foreground/50" />

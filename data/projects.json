@@ -12,7 +12,7 @@
       "lastCommitMessage": "chore(release): 1.79.3",
       "gitRemoteUrl": "https://github.com/Xifix-Tecnologia/redes-locais-marketplace",
       "techStack": [],
-      "favorite": false,
+      "favorite": true,
       "lastOpenedAt": "2026-03-09T19:02:51.003Z"
     },
     {
@@ -88,13 +88,13 @@
       "isGitRepo": true,
       "gitBranch": "main",
       "gitDirty": true,
-      "lastCommitDate": "2026-03-09T16:29:30-03:00",
-      "lastCommitMessage": "Update rede-capanema tasks: credit card bug done, order dates moved to in-progress",
+      "lastCommitDate": "2026-03-09T16:35:41-03:00",
+      "lastCommitMessage": "Add task viewer dialog on click and increase description field size",
       "gitRemoteUrl": "https://github.com/defremont/vibedash",
       "techStack": [],
       "favorite": true,
       "lastOpenedAt": "2026-03-09T19:29:17.595Z"
     }
   ],
-  "lastScannedAt": "2026-03-09T19:33:09.536Z"
+  "lastScannedAt": "2026-03-09T19:41:13.352Z"
 }
