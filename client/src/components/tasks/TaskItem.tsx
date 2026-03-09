@@ -13,6 +13,7 @@ interface TaskItemProps {
   projectName?: string
   projectPath?: string
   onEdit: (task: Task) => void
+  onView?: (task: Task) => void
   dragListeners?: Record<string, Function>
 }
 
@@ -30,7 +31,7 @@ const statusConfig = {
   done: { label: 'Done', variant: 'outline' as const },
 }
 
-export function TaskItem({ task, projectName, projectPath, onEdit, dragListeners }: TaskItemProps) {
+export function TaskItem({ task, projectName, projectPath, onEdit, onView, dragListeners }: TaskItemProps) {
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
@@ -86,7 +87,10 @@ export function TaskItem({ task, projectName, projectPath, onEdit, dragListeners
 
       <PriorityIcon className={cn('h-3 w-3 shrink-0 mt-1', priority.color)} />
 
-      <span className={cn('text-sm line-clamp-2 min-w-0', task.status === 'done' && 'line-through')}>
+      <span
+        className={cn('text-sm line-clamp-2 min-w-0 cursor-pointer hover:text-primary transition-colors', task.status === 'done' && 'line-through')}
+        onClick={(e) => { e.stopPropagation(); onView?.(task) }}
+      >
         {task.title}
       </span>
 

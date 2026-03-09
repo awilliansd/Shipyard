@@ -79,7 +79,7 @@ export function TaskEditor({ projectId, task, open, onOpenChange }: TaskEditorPr
               onChange={e => setDescription(e.target.value)}
               placeholder="Optional description..."
               className="mt-1"
-              rows={3}
+              rows={6}
             />
           </div>
           <div className="flex gap-4">

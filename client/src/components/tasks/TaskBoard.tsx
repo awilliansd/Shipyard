@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { TaskItem } from './TaskItem'
 import { TaskEditor } from './TaskEditor'
+import { TaskViewer } from './TaskViewer'
 import { CsvReviewDialog } from './CsvReviewDialog'
 import { useTasks, useUpdateTask, useImportTasks, type Task } from '@/hooks/useTasks'
 import { tasksToCSV, parseCSV, diffTasks, type CsvDiff } from '@/lib/csv'
@@ -89,7 +90,7 @@ function DroppableColumn({ col, children, count }: { col: ColumnConfig; children
   )
 }
 
-function DraggableTaskItem({ task, projectName, projectPath, onEdit }: { task: Task; projectName?: string; projectPath?: string; onEdit: (task: Task) => void }) {
+function DraggableTaskItem({ task, projectName, projectPath, onEdit, onView }: { task: Task; projectName?: string; projectPath?: string; onEdit: (task: Task) => void; onView: (task: Task) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     data: { task },
@@ -106,6 +107,7 @@ function DraggableTaskItem({ task, projectName, projectPath, onEdit }: { task: T
         projectName={projectName}
         projectPath={projectPath}
         onEdit={onEdit}
+        onView={onView}
         dragListeners={listeners as unknown as Record<string, Function>}
       />
     </div>
@@ -118,6 +120,8 @@ export function TaskBoard({ projectId, projectName, projectPath }: TaskBoardProp
   const importTasks = useImportTasks()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [csvReviewOpen, setCsvReviewOpen] = useState(false)
   const [csvDiff, setCsvDiff] = useState<CsvDiff | null>(null)
@@ -125,6 +129,11 @@ export function TaskBoard({ projectId, projectName, projectPath }: TaskBoardProp
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
+
+  const handleView = useCallback((task: Task) => {
+    setViewingTask(task)
+    setViewerOpen(true)
+  }, [])
 
   const handleEdit = useCallback((task: Task) => {
     setEditingTask(task)
@@ -298,6 +307,7 @@ export function TaskBoard({ projectId, projectName, projectPath }: TaskBoardProp
                       projectName={projectName}
                       projectPath={projectPath}
                       onEdit={handleEdit}
+                      onView={handleView}
                     />
                   ))
                 ) : (
@@ -318,6 +328,15 @@ export function TaskBoard({ projectId, projectName, projectPath }: TaskBoardProp
           )}
         </DragOverlay>
       </DndContext>
+
+      <TaskViewer
+        task={viewingTask}
+        projectName={projectName}
+        projectPath={projectPath}
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+        onEdit={handleEdit}
+      />
 
       <TaskEditor
         projectId={projectId}

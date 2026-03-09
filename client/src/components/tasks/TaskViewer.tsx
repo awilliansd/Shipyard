@@ -1,0 +1,116 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Pencil, Copy, AlertTriangle, ArrowUp, ArrowDown, Minus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { type Task } from '@/hooks/useTasks'
+import { buildTaskPrompt } from '@/lib/promptBuilder'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api'
+import { formatDistanceToNow } from 'date-fns'
+import { toast } from 'sonner'
+
+interface TaskViewerProps {
+  task: Task | null
+  projectName?: string
+  projectPath?: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onEdit: (task: Task) => void
+}
+
+const priorityConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+  urgent: { icon: AlertTriangle, color: 'text-red-500', label: 'Urgent' },
+  high: { icon: ArrowUp, color: 'text-orange-500', label: 'High' },
+  medium: { icon: Minus, color: 'text-blue-500', label: 'Medium' },
+  low: { icon: ArrowDown, color: 'text-green-500', label: 'Low' },
+}
+
+const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+  backlog: { label: 'Backlog', variant: 'outline' },
+  todo: { label: 'To Do', variant: 'secondary' },
+  in_progress: { label: 'In Progress', variant: 'default' },
+  done: { label: 'Done', variant: 'outline' },
+}
+
+function formatDate(date?: string) {
+  if (!date) return null
+  try { return formatDistanceToNow(new Date(date), { addSuffix: true }) }
+  catch { return null }
+}
+
+export function TaskViewer({ task, projectName, projectPath, open, onOpenChange, onEdit }: TaskViewerProps) {
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
+
+  if (!task) return null
+
+  const pri = priorityConfig[task.priority] || priorityConfig.medium
+  const sts = statusConfig[task.status] || statusConfig.todo
+  const PriIcon = pri.icon
+
+  const handleCopy = () => {
+    const prompt = buildTaskPrompt(task, projectName, projectPath, settings?.tasksDir)
+    navigator.clipboard.writeText(prompt)
+    toast.success('Copied to clipboard')
+  }
+
+  const handleEdit = () => {
+    onOpenChange(false)
+    onEdit(task)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[550px]">
+        <DialogHeader>
+          <div className="flex items-start gap-3">
+            <PriIcon className={cn('h-5 w-5 mt-0.5 shrink-0', pri.color)} />
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-base leading-snug">{task.title}</DialogTitle>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant={sts.variant} className="text-[10px]">{sts.label}</Badge>
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <PriIcon className={cn('h-2.5 w-2.5', pri.color)} />
+                  {pri.label}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {task.description && (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</label>
+              <p className="mt-1.5 text-sm whitespace-pre-wrap leading-relaxed">{task.description}</p>
+            </div>
+          )}
+
+          {task.promptTemplate && (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Prompt Template</label>
+              <pre className="mt-1.5 text-xs font-mono bg-muted/50 rounded-md p-3 whitespace-pre-wrap max-h-40 overflow-y-auto">{task.promptTemplate}</pre>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-muted-foreground pt-2 border-t">
+            {task.createdAt && <span>Created {formatDate(task.createdAt)}</span>}
+            {task.inProgressAt && <span>Started {formatDate(task.inProgressAt)}</span>}
+            {task.doneAt && <span>Done {formatDate(task.doneAt)}</span>}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs" onClick={handleCopy}>
+            <Copy className="h-3.5 w-3.5" />
+            Copy as Prompt
+          </Button>
+          <Button variant="default" size="sm" className="gap-1.5 text-xs" onClick={handleEdit}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
