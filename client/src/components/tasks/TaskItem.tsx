@@ -1,6 +1,7 @@
 import { Pencil, Trash2, Copy, Check, Circle, AlertTriangle, ArrowUp, ArrowDown, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useUpdateTask, useDeleteTask, type Task } from '@/hooks/useTasks'
 import { buildTaskPrompt } from '@/lib/promptBuilder'
@@ -101,15 +102,30 @@ export function TaskItem({ task, projectName, projectPath, onEdit, onView, dragL
       )}
 
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-auto">
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyPrompt} title="Copy as prompt">
-          <Copy className="h-3 w-3" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleEdit} title="Edit">
-          <Pencil className="h-3 w-3" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={handleDelete} title="Delete">
-          <Trash2 className="h-3 w-3" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyPrompt}>
+              <Copy className="h-3 w-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copy task as prompt — paste into Claude or any AI assistant</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleEdit}>
+              <Pencil className="h-3 w-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit task</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={handleDelete}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete task</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   )

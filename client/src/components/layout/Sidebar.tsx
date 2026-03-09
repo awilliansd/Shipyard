@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Star, FolderOpen, RefreshCw, Settings, ClipboardList, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { LayoutDashboard, Star, FolderOpen, RefreshCw, Settings, ClipboardList, PanelLeftClose, PanelLeft, ArrowUp, ArrowDown, FileEdit } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +41,34 @@ function ProjectAvatar({ name, className }: { name: string; className?: string }
     <span className={cn('flex items-center justify-center rounded-md text-[11px] font-bold', projectColor(name), className)}>
       {initial}
     </span>
+  )
+}
+
+function GitIndicators({ project }: { project: { gitAhead?: number; gitBehind?: number; gitDirty?: boolean; gitStaged?: number; gitUnstaged?: number; gitUntracked?: number } }) {
+  const ahead = project.gitAhead ?? 0
+  const behind = project.gitBehind ?? 0
+  const changes = (project.gitStaged ?? 0) + (project.gitUnstaged ?? 0) + (project.gitUntracked ?? 0)
+
+  if (!ahead && !behind && !changes) return null
+
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      {ahead > 0 && (
+        <span className="flex items-center text-[10px] text-orange-400" title={`${ahead} unpushed`}>
+          <ArrowUp className="h-2.5 w-2.5" />{ahead}
+        </span>
+      )}
+      {behind > 0 && (
+        <span className="flex items-center text-[10px] text-blue-400" title={`${behind} to pull`}>
+          <ArrowDown className="h-2.5 w-2.5" />{behind}
+        </span>
+      )}
+      {changes > 0 && (
+        <span className="flex items-center text-[10px] text-yellow-400" title={`${changes} uncommitted`}>
+          <FileEdit className="h-2.5 w-2.5" />{changes}
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -118,23 +146,35 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {activeProjects.length > 0 && (
             <>
               <div className="w-6 border-t my-1" />
-              {activeProjects.map(p => (
-                <Tooltip key={p.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => openTab(p.id)}
-                      className={cn(
-                        'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                        location.pathname === `/project/${p.id}` ? 'ring-1 ring-primary' : 'hover:bg-accent/50'
-                      )}
-                    >
-                      <ProjectAvatar name={p.name} className="w-7 h-7" />
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-500" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{p.name}</TooltipContent>
-                </Tooltip>
-              ))}
+              {activeProjects.map(p => {
+                const gitInfo = []
+                if ((p.gitAhead ?? 0) > 0) gitInfo.push(`${p.gitAhead} unpushed`)
+                if ((p.gitBehind ?? 0) > 0) gitInfo.push(`${p.gitBehind} to pull`)
+                const changes = (p.gitStaged ?? 0) + (p.gitUnstaged ?? 0) + (p.gitUntracked ?? 0)
+                if (changes > 0) gitInfo.push(`${changes} uncommitted`)
+                return (
+                  <Tooltip key={p.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => openTab(p.id)}
+                        className={cn(
+                          'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                          location.pathname === `/project/${p.id}` ? 'ring-1 ring-primary' : 'hover:bg-accent/50'
+                        )}
+                      >
+                        <ProjectAvatar name={p.name} className="w-7 h-7" />
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-500" />
+                        {(p.gitAhead ?? 0) > 0 && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-400" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {p.name}{gitInfo.length > 0 && ` (${gitInfo.join(', ')})`}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
             </>
           )}
 
@@ -262,6 +302,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               >
                 <ProjectAvatar name={p.name} className="w-5 h-5 shrink-0" />
                 <span className="truncate flex-1">{p.name}</span>
+                <GitIndicators project={p} />
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
               </button>
             ))}
@@ -287,6 +328,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               >
                 <ProjectAvatar name={p.name} className="w-5 h-5 shrink-0" />
                 <span className="truncate flex-1">{p.name}</span>
+                <GitIndicators project={p} />
                 <Star className="h-3 w-3 fill-yellow-500 text-yellow-500 shrink-0" />
               </button>
             ))}

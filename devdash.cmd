@@ -1,4 +1,4 @@
 @echo off
-cd /d "C:\Code\devdash"
+cd /d "%~dp0"
 start "" "http://localhost:5421"
 pnpm dev

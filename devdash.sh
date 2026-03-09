@@ -6,7 +6,15 @@ cd "$SCRIPT_DIR"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 
-# Wait for server to start, then open browser
-(sleep 4 && xdg-open "http://localhost:5421" 2>/dev/null) &
+# Detect OS for browser open command
+open_browser() {
+  sleep 4
+  if command -v xdg-open &>/dev/null; then
+    xdg-open "http://localhost:5421" 2>/dev/null
+  elif command -v open &>/dev/null; then
+    open "http://localhost:5421"
+  fi
+}
 
+open_browser &
 pnpm dev

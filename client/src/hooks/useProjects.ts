@@ -9,6 +9,11 @@ export interface Project {
   isGitRepo: boolean
   gitBranch?: string
   gitDirty?: boolean
+  gitAhead?: number
+  gitBehind?: number
+  gitStaged?: number
+  gitUnstaged?: number
+  gitUntracked?: number
   lastCommitDate?: string
   lastCommitMessage?: string
   gitRemoteUrl?: string

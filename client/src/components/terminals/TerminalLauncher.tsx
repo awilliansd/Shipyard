@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Terminal, Play, Monitor, Code2, FolderOpen, Copy, Sparkles, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useLaunchTerminal, useLaunchVSCode, useOpenFolder } from '@/hooks/useProjects'
 import { useTasks, type Task } from '@/hooks/useTasks'
 import { useQuery } from '@tanstack/react-query'
@@ -102,31 +103,52 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
         <div className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Claude</h2>
           <div className="space-y-1">
-            <Button
-              variant="default"
-              className="w-full justify-start gap-2 h-8 text-xs"
-              onClick={handleLaunchClaudeWithContext}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Open Claude + Copy Context
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-8 text-xs"
-              onClick={handleCopyContext}
-            >
-              <Copy className="h-3.5 w-3.5" />
-              Copy Tasks Context
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  className="w-full justify-start gap-2 h-8 text-xs"
+                  onClick={handleLaunchClaudeWithContext}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Open Claude + Copy Context
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p className="max-w-[200px] text-xs">Copies project info + tasks to clipboard, then opens Claude Code in a terminal. Just paste to give Claude your context.</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-2 h-8 text-xs"
+                  onClick={handleCopyContext}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy Tasks Context
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p className="max-w-[200px] text-xs">Copies project path + all tasks to clipboard. Paste into any AI assistant or text editor.</p>
+              </TooltipContent>
+            </Tooltip>
             {inProgressCount > 0 && (
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 h-8 text-xs"
-                onClick={handleCopyInProgress}
-              >
-                <ClipboardList className="h-3.5 w-3.5" />
-                Copy In Progress ({inProgressCount})
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-2 h-8 text-xs"
+                    onClick={handleCopyInProgress}
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Copy In Progress ({inProgressCount})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p className="max-w-[200px] text-xs">Copies only in-progress tasks as a focused prompt. Paste into Claude to continue working.</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
           <label className="flex items-center gap-2 px-1 cursor-pointer select-none">
@@ -148,59 +170,84 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
       <div className="space-y-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick Launch</h2>
         <div className="space-y-1">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 h-8 text-xs"
-            onClick={() => launchTerminal.mutate(
-              { projectId, type: claudeType },
-              { onSuccess: () => toast.success('Launched Claude Code') }
-            )}
-          >
-            <Terminal className="h-3.5 w-3.5" />
-            Claude Code
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 h-8 text-xs"
-            onClick={() => launchTerminal.mutate(
-              { projectId, type: 'dev' },
-              { onSuccess: () => toast.success('Launched Dev Server') }
-            )}
-          >
-            <Play className="h-3.5 w-3.5" />
-            Dev Server
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 h-8 text-xs"
-            onClick={() => launchTerminal.mutate(
-              { projectId, type: 'shell' },
-              { onSuccess: () => toast.success('Launched Shell') }
-            )}
-          >
-            <Monitor className="h-3.5 w-3.5" />
-            Shell
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 h-8 text-xs"
-            onClick={() => launchVSCode.mutate(projectId, {
-              onSuccess: () => toast.success('Opened VS Code'),
-            })}
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            VS Code
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 h-8 text-xs"
-            onClick={() => openFolder.mutate(projectId, {
-              onSuccess: () => toast.success('Opened folder'),
-            })}
-          >
-            <FolderOpen className="h-3.5 w-3.5" />
-            Open Folder
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={() => launchTerminal.mutate(
+                  { projectId, type: claudeType },
+                  { onSuccess: () => toast.success('Launched Claude Code') }
+                )}
+              >
+                <Terminal className="h-3.5 w-3.5" />
+                Claude Code
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Opens a terminal with Claude Code in the project directory</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={() => launchTerminal.mutate(
+                  { projectId, type: 'dev' },
+                  { onSuccess: () => toast.success('Launched Dev Server') }
+                )}
+              >
+                <Play className="h-3.5 w-3.5" />
+                Dev Server
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Opens a terminal and runs the dev server (npm run dev)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={() => launchTerminal.mutate(
+                  { projectId, type: 'shell' },
+                  { onSuccess: () => toast.success('Launched Shell') }
+                )}
+              >
+                <Monitor className="h-3.5 w-3.5" />
+                Shell
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Opens a terminal in the project directory</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={() => launchVSCode.mutate(projectId, {
+                  onSuccess: () => toast.success('Opened VS Code'),
+                })}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                VS Code
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Opens the project in Visual Studio Code</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={() => openFolder.mutate(projectId, {
+                  onSuccess: () => toast.success('Opened folder'),
+                })}
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+                Open Folder
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Opens the project folder in your file manager</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

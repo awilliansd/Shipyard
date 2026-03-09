@@ -1,8 +1,9 @@
-import { GitBranch, Star, Terminal, Code2, Play, Monitor, Clock, FolderOpen, Inbox, Loader, CheckCircle2 } from 'lucide-react'
+import { GitBranch, Star, Terminal, Code2, Play, Monitor, Clock, FolderOpen, Inbox, Loader, CheckCircle2, ArrowUp, ArrowDown, FilePlus2, FileEdit } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useLaunchTerminal, useLaunchVSCode, useOpenFolder, useUpdateProject, type Project } from '@/hooks/useProjects'
 import { useTabs } from '@/hooks/useTabs'
@@ -87,15 +88,60 @@ export function ProjectCard({ project, taskCounts }: ProjectCardProps) {
           {displayPath}
         </p>
 
-        {/* Git info: branch + dirty */}
+        {/* Git info: branch + status indicators */}
         {project.isGitRepo && project.gitBranch && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <GitBranch className="h-3 w-3 shrink-0" />
-            <span className="truncate">{project.gitBranch}</span>
-            {project.gitDirty && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-500">
-                uncommitted
-              </Badge>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-1">
+              <GitBranch className="h-3 w-3 shrink-0" />
+              <span className="truncate">{project.gitBranch}</span>
+            </div>
+            {(project.gitAhead ?? 0) > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-0.5 text-orange-400 cursor-default">
+                    <ArrowUp className="h-3 w-3" />
+                    {project.gitAhead}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{project.gitAhead} commit{project.gitAhead! > 1 ? 's' : ''} not pushed to remote</TooltipContent>
+              </Tooltip>
+            )}
+            {(project.gitBehind ?? 0) > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-0.5 text-blue-400 cursor-default">
+                    <ArrowDown className="h-3 w-3" />
+                    {project.gitBehind}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{project.gitBehind} commit{project.gitBehind! > 1 ? 's' : ''} behind remote (pull needed)</TooltipContent>
+              </Tooltip>
+            )}
+            {(project.gitStaged ?? 0) > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-500 cursor-default gap-0.5">
+                    <CheckCircle2 className="h-2.5 w-2.5" />
+                    {project.gitStaged} staged
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>{project.gitStaged} file{project.gitStaged! > 1 ? 's' : ''} staged and ready to commit</TooltipContent>
+              </Tooltip>
+            )}
+            {((project.gitUnstaged ?? 0) > 0 || (project.gitUntracked ?? 0) > 0) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-500 cursor-default gap-0.5">
+                    <FileEdit className="h-2.5 w-2.5" />
+                    {(project.gitUnstaged ?? 0) + (project.gitUntracked ?? 0)} changes
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {(project.gitUnstaged ?? 0) > 0 && <span>{project.gitUnstaged} modified</span>}
+                  {(project.gitUnstaged ?? 0) > 0 && (project.gitUntracked ?? 0) > 0 && <span>, </span>}
+                  {(project.gitUntracked ?? 0) > 0 && <span>{project.gitUntracked} untracked</span>}
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         )}
@@ -160,39 +206,62 @@ export function ProjectCard({ project, taskCounts }: ProjectCardProps) {
 
         {/* Action buttons - always visible, with separator */}
         <div className="flex items-center gap-1 pt-1 border-t border-border/50">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => handleLaunch(e, 'claude')} title="Claude Code">
-            <Terminal className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => handleLaunch(e, 'dev')} title="Dev Server">
-            <Play className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => handleLaunch(e, 'shell')} title="Shell">
-            <Monitor className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={e => {
-              e.stopPropagation()
-              launchVSCode.mutate(project.id, { onSuccess: () => toast.success('Opened VS Code') })
-            }}
-            title="VS Code"
-          >
-            <Code2 className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={e => {
-              e.stopPropagation()
-              openFolder.mutate(project.id, { onSuccess: () => toast.success('Opened folder') })
-            }}
-            title="Open Folder"
-          >
-            <FolderOpen className="h-3.5 w-3.5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => handleLaunch(e, 'claude')}>
+                <Terminal className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Open Claude Code in terminal</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => handleLaunch(e, 'dev')}>
+                <Play className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Launch dev server (npm run dev)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => handleLaunch(e, 'shell')}>
+                <Monitor className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Open terminal in project directory</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={e => {
+                  e.stopPropagation()
+                  launchVSCode.mutate(project.id, { onSuccess: () => toast.success('Opened VS Code') })
+                }}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Open in VS Code</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={e => {
+                  e.stopPropagation()
+                  openFolder.mutate(project.id, { onSuccess: () => toast.success('Opened folder') })
+                }}
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Open in file manager</TooltipContent>
+          </Tooltip>
         </div>
       </CardContent>
     </Card>

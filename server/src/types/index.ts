@@ -6,6 +6,11 @@ export interface Project {
   isGitRepo: boolean;
   gitBranch?: string;
   gitDirty?: boolean;
+  gitAhead?: number;       // Commits ahead of remote (not pushed)
+  gitBehind?: number;      // Commits behind remote (not pulled)
+  gitStaged?: number;      // Number of staged files
+  gitUnstaged?: number;    // Number of modified but unstaged files
+  gitUntracked?: number;   // Number of untracked files
   lastCommitDate?: string;
   lastCommitMessage?: string;
   gitRemoteUrl?: string;

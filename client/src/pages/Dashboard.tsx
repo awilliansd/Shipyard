@@ -6,12 +6,14 @@ import { ProjectList } from '@/components/projects/ProjectList'
 import { useProjects, type Project } from '@/hooks/useProjects'
 import { useAllTasks } from '@/hooks/useTasks'
 import { useTabs } from '@/hooks/useTabs'
+import { WelcomeWizard, useOnboarding } from '@/components/onboarding/WelcomeWizard'
 import type { TaskCounts } from '@/components/projects/ProjectCard'
 
 export function Dashboard() {
   const { data: projects } = useProjects()
   const { data: tasks } = useAllTasks()
   const { openTab } = useTabs()
+  const onboarding = useOnboarding()
 
   const projectMap = useMemo(() => {
     const m = new Map<string, Project>()
@@ -53,6 +55,10 @@ export function Dashboard() {
       }))
       .slice(0, 6)
   }, [tasks, projectMap])
+
+  if (onboarding.shouldShow) {
+    return <WelcomeWizard onComplete={onboarding.complete} />
+  }
 
   return (
     <>

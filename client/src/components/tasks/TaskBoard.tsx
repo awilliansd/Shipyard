@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { Plus, Inbox, Loader, CheckCircle2, Download, Upload, FileSpreadsheet } from 'lucide-react'
+import { Plus, Inbox, Loader, CheckCircle2, Download, Upload, FileSpreadsheet, Info } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -13,6 +13,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TaskItem } from './TaskItem'
 import { TaskEditor } from './TaskEditor'
 import { TaskViewer } from './TaskViewer'
@@ -265,21 +266,41 @@ export function TaskBoard({ projectId, projectName, projectPath }: TaskBoardProp
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Tasks ({tasks?.length || 0})</h2>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport} title="Export tasks">
-            <Download className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleImport} title="Import JSON">
-            <Upload className="h-3.5 w-3.5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport}>
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Export tasks as JSON (for backup or transfer to another machine)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleImport}>
+                <Upload className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Import tasks from a JSON file</TooltipContent>
+          </Tooltip>
           <div className="w-px h-4 bg-border mx-0.5" />
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={handleCsvExport} title="Export CSV for client sharing">
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            Export CSV
-          </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={handleCsvImport} title="Import CSV with diff review">
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            Import CSV
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={handleCsvExport}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Export CSV
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Export as CSV spreadsheet (for sharing with clients or team)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={handleCsvImport}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Import CSV
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Import CSV with diff review — compare and merge changes</TooltipContent>
+          </Tooltip>
           <div className="w-px h-4 bg-border mx-0.5" />
           <Button size="sm" className="h-7 gap-1 text-xs" onClick={handleNew}>
             <Plus className="h-3.5 w-3.5" />

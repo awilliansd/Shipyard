@@ -61,7 +61,12 @@ async function detectTechStack(projectPath: string): Promise<string[]> {
   return stack;
 }
 
-async function detectGitInfo(projectPath: string): Promise<{ isGitRepo: boolean; gitBranch?: string; gitDirty?: boolean; lastCommitDate?: string; lastCommitMessage?: string; gitRemoteUrl?: string }> {
+async function detectGitInfo(projectPath: string): Promise<{
+  isGitRepo: boolean; gitBranch?: string; gitDirty?: boolean;
+  gitAhead?: number; gitBehind?: number;
+  gitStaged?: number; gitUnstaged?: number; gitUntracked?: number;
+  lastCommitDate?: string; lastCommitMessage?: string; gitRemoteUrl?: string;
+}> {
   const gitDir = join(projectPath, '.git');
   if (!(await fileExists(gitDir))) {
     return { isGitRepo: false };
@@ -90,6 +95,11 @@ async function detectGitInfo(projectPath: string): Promise<{ isGitRepo: boolean;
       isGitRepo: true,
       gitBranch: branchSummary.current,
       gitDirty: !status.isClean(),
+      gitAhead: status.ahead || 0,
+      gitBehind: status.behind || 0,
+      gitStaged: status.staged.length,
+      gitUnstaged: status.modified.length + status.deleted.length,
+      gitUntracked: status.not_added.length,
       lastCommitDate: log?.latest?.date,
       lastCommitMessage: log?.latest?.message,
       gitRemoteUrl,

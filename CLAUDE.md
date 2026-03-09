@@ -45,12 +45,14 @@ vibedash/
 │   │   │   ├── ui/                # shadcn/ui: button, card, badge, input, textarea,
 │   │   │   │                      #   dialog, select, tabs, tooltip, folder-browser
 │   │   │   ├── layout/
-│   │   │   │   ├── Sidebar.tsx    # Nav: All Projects, All Tasks, counters, favorites, active
+│   │   │   │   ├── Sidebar.tsx    # Nav: All Projects, All Tasks, counters, favorites, active, git indicators
 │   │   │   │   ├── Header.tsx     # Titulo + acoes do projeto (Claude, Dev, Shell, VS Code, Folder)
 │   │   │   │   └── Layout.tsx     # Sidebar + Outlet wrapper
+│   │   │   ├── onboarding/
+│   │   │   │   └── WelcomeWizard.tsx  # First-run setup wizard (4 steps)
 │   │   │   ├── projects/
 │   │   │   │   ├── ProjectList.tsx    # Grid com busca, filtro por categoria, sorting
-│   │   │   │   ├── ProjectCard.tsx    # Card: nome, stack, branch, status git, launchers
+│   │   │   │   ├── ProjectCard.tsx    # Card: nome, stack, branch, git status indicators, launchers
 │   │   │   │   └── ProjectSettings.tsx
 │   │   │   ├── tasks/
 │   │   │   │   ├── TaskBoard.tsx      # Kanban 3 colunas com drag-and-drop (@dnd-kit)
@@ -104,8 +106,12 @@ vibedash/
 │   └── tasks/                     # Um JSON por projeto
 │       └── {projectId}.json       # { tasks: Task[] }
 │
+├── setup.sh                       # Linux/macOS: setup + optional alias/desktop shortcut
+├── setup.cmd                      # Windows: setup
 ├── devdash.cmd                    # Windows: inicia server + abre browser
-├── devdash.sh                     # Linux: inicia server + abre browser (xdg-open)
+├── devdash.sh                     # Linux/macOS: inicia server + abre browser
+├── README.md                      # Documentacao publica
+├── LICENSE                        # MIT
 ├── pnpm-workspace.yaml            # packages: [client, server]
 └── package.json                   # Root: concurrently para pnpm dev
 ```
@@ -121,8 +127,14 @@ interface Project {
   isGitRepo: boolean;
   gitBranch?: string;
   gitDirty?: boolean;
+  gitAhead?: number;        // Commits ahead of remote (not pushed)
+  gitBehind?: number;       // Commits behind remote (not pulled)
+  gitStaged?: number;       // Number of staged files
+  gitUnstaged?: number;     // Number of modified but unstaged files
+  gitUntracked?: number;    // Number of untracked files
   lastCommitDate?: string;
   lastCommitMessage?: string;
+  gitRemoteUrl?: string;
   techStack: string[];      // Detectado do package.json (ex: ["react", "vite"])
   favorite: boolean;
   lastOpenedAt?: string;
@@ -189,6 +201,22 @@ interface Settings {
 - `POST /api/browse` - Navega filesystem { path } → { directories[] }
 
 ## Funcionalidades Implementadas
+
+### Onboarding (first-run)
+- WelcomeWizard exibido na primeira visita (se nao ha projetos adicionados)
+- 4 steps: Welcome → Add Projects → Data Info → Ready
+- Permite scan/add projetos direto no wizard
+- Explica sobre dados locais, export/import, sync
+- Skip disponivel em qualquer passo
+- Controlado via localStorage (`devdash:onboarding-complete`)
+- Arquivo: `components/onboarding/WelcomeWizard.tsx`
+
+### Git Status Indicators
+- ProjectCard exibe: ahead (unpushed), behind (to pull), staged, unstaged+untracked
+- Sidebar (expanded) mostra indicadores ao lado de cada projeto
+- Sidebar (collapsed) tooltips incluem git info
+- Backend: `projectDiscovery.ts` detecta `gitAhead`, `gitBehind`, `gitStaged`, `gitUnstaged`, `gitUntracked`
+- Todos os botoes de acao tem tooltips explicativos
 
 ### Sistema de Abas (multi-projeto)
 - Abrir varios projetos simultaneamente em abas
