@@ -1,0 +1,267 @@
+{
+  "projects": [
+    {
+      "id": "audience-insights",
+      "name": "audience-insights",
+      "path": "C:\\Code\\audience-insights",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-03-07T01:44:59-03:00",
+      "lastCommitMessage": "feat(auth): added plan caching to session",
+      "techStack": [
+        "react",
+        "next",
+        "tailwind",
+        "typescript"
+      ],
+      "favorite": true,
+      "lastOpenedAt": "2026-03-09T15:16:45.286Z"
+    },
+    {
+      "id": "chainbuilder",
+      "name": "ChainBuilder",
+      "path": "C:\\Code\\ChainBuilder",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-02-26T18:13:19-03:00",
+      "lastCommitMessage": "feat: added achievements, challenges, and missions",
+      "techStack": [],
+      "favorite": false
+    },
+    {
+      "id": "carbontrack",
+      "name": "carbontrack",
+      "path": "C:\\Code\\carbontrack",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-03-06T15:26:07-03:00",
+      "lastCommitMessage": "`refactor(biomassa): restructured material display`",
+      "techStack": [],
+      "favorite": true
+    },
+    {
+      "id": "greenlov",
+      "name": "greenlov",
+      "path": "C:\\Code\\greenlov",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-02-04T18:52:05-03:00",
+      "lastCommitMessage": "Increase timeout settings in HttpClient for improved API call handling",
+      "techStack": [],
+      "favorite": false
+    },
+    {
+      "id": "gitfolio",
+      "name": "Gitfolio",
+      "path": "C:\\Code\\Gitfolio",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-01-20T23:22:48-03:00",
+      "lastCommitMessage": "feat: battles and leaderboard",
+      "techStack": [
+        "python"
+      ],
+      "favorite": false
+    },
+    {
+      "id": "radioguess",
+      "name": "RadioGuess",
+      "path": "C:\\Code\\RadioGuess",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-01-23T23:54:27-03:00",
+      "lastCommitMessage": "fix: railway build",
+      "techStack": [
+        "react",
+        "next",
+        "tailwind",
+        "typescript"
+      ],
+      "favorite": false
+    },
+    {
+      "id": "mapas-redeslocais",
+      "name": "mapas-redeslocais",
+      "path": "C:\\Code\\xifix\\mapas-redeslocais",
+      "category": "xifix",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-03-05T16:04:43-03:00",
+      "lastCommitMessage": "fix(embed): use OR logic for category + cnae_prefix filtering",
+      "techStack": [
+        "react",
+        "vite",
+        "tailwind",
+        "typescript"
+      ],
+      "favorite": false
+    },
+    {
+      "id": "rede-influencers",
+      "name": "rede-influencers",
+      "path": "C:\\Code\\xifix\\rede-influencers",
+      "category": "xifix",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-02-23T17:47:39-03:00",
+      "lastCommitMessage": "refactor(tiktok): simplify session UI with env-aware panels and improve video API fallback",
+      "techStack": [],
+      "favorite": true
+    },
+    {
+      "id": "redes-locais-marketplace",
+      "name": "redes-locais-marketplace",
+      "path": "C:\\Code\\xifix\\redes-locais-marketplace",
+      "category": "xifix",
+      "isGitRepo": true,
+      "gitBranch": "staging",
+      "gitDirty": false,
+      "lastCommitDate": "2026-03-06T14:22:30-03:00",
+      "lastCommitMessage": "chore(release): 1.76.0",
+      "techStack": [],
+      "favorite": true
+    },
+    {
+      "id": "comunic-web",
+      "name": "comunic-web",
+      "path": "C:\\Code\\xifix\\comunic-web",
+      "category": "xifix",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-02-13T10:46:26-03:00",
+      "lastCommitMessage": "feat: enhance permissions handling and add feature flags",
+      "techStack": [
+        "react",
+        "next",
+        "tailwind",
+        "typescript"
+      ],
+      "favorite": false
+    },
+    {
+      "id": "financeiro",
+      "name": "financeiro",
+      "path": "C:\\Code\\2026\\financeiro",
+      "category": "2026",
+      "isGitRepo": false,
+      "techStack": [],
+      "favorite": false
+    },
+    {
+      "id": "instrucoes-propostas-freelas",
+      "name": "instrucoes-propostas-freelas",
+      "path": "C:\\Code\\2026\\freelas\\instrucoes-propostas-freelas",
+      "category": "freelas",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-03-06T10:37:33-03:00",
+      "lastCommitMessage": "chore(proposals): added 99freelas proposal templates",
+      "techStack": [],
+      "favorite": false
+    },
+    {
+      "id": "silas-n8n",
+      "name": "silas n8n",
+      "path": "C:\\Code\\2026\\freelas\\silas n8n",
+      "category": "freelas",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-03-05T19:25:11-03:00",
+      "lastCommitMessage": "feat(candidato): added personal and document info mappings",
+      "techStack": [],
+      "favorite": true
+    },
+    {
+      "id": "fernando-mikrotik",
+      "name": "fernando mikrotik",
+      "path": "C:\\Code\\2026\\freelas\\fernando mikrotik",
+      "category": "freelas",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-03-04T19:14:10-03:00",
+      "lastCommitMessage": "docs(hotspot): corrected paths and DNS configuration",
+      "techStack": [],
+      "favorite": true
+    },
+    {
+      "id": "canoe-claudio",
+      "name": "canoe claudio",
+      "path": "C:\\Code\\2026\\freelas\\canoe claudio",
+      "category": "freelas",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-03-08T11:48:41-03:00",
+      "lastCommitMessage": "feat(header): added desktop navigation with unread badge",
+      "techStack": [
+        "react",
+        "vite",
+        "tailwind",
+        "typescript"
+      ],
+      "favorite": true,
+      "lastOpenedAt": "2026-03-09T15:12:43.858Z"
+    },
+    {
+      "id": "scraptwitter",
+      "name": "scraptwitter",
+      "path": "C:\\Code\\2026\\scraptwitter",
+      "category": "2026",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": true,
+      "lastCommitDate": "2026-03-09T10:30:25-03:00",
+      "lastCommitMessage": "chore(results): updated posts with refined filters",
+      "techStack": [
+        "python"
+      ],
+      "favorite": true
+    },
+    {
+      "id": "smartlca",
+      "name": "smartlca",
+      "path": "C:\\Code\\2026\\smartlca",
+      "category": "2026",
+      "isGitRepo": true,
+      "gitBranch": "main",
+      "gitDirty": false,
+      "lastCommitDate": "2026-03-05T21:06:30-03:00",
+      "lastCommitMessage": "feat(admin): added admin dashboard with user management",
+      "techStack": [
+        "express"
+      ],
+      "favorite": true
+    },
+    {
+      "id": "devdash",
+      "name": "devdash",
+      "path": "C:\\Code\\devdash",
+      "category": "Code",
+      "isGitRepo": true,
+      "gitBranch": "",
+      "gitDirty": true,
+      "techStack": [],
+      "favorite": true,
+      "lastOpenedAt": "2026-03-09T15:09:34.032Z"
+    }
+  ],
+  "lastScannedAt": "2026-03-09T15:16:45.286Z"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "devdash",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"pnpm --filter devdash-server dev\" \"pnpm --filter devdash-client dev\"",
+    "build": "pnpm --filter devdash-client build",
+    "start": "pnpm --filter devdash-server start"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@swc/core", "esbuild"]
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

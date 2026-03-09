@@ -1,0 +1,22 @@
+import { Routes, Route } from 'react-router-dom'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { Layout } from '@/components/layout/Layout'
+import { Dashboard } from '@/pages/Dashboard'
+import { Workspace } from '@/pages/Workspace'
+import { TasksPage } from '@/pages/TasksPage'
+import { Settings } from '@/pages/Settings'
+
+export default function App() {
+  return (
+    <TooltipProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/project/:projectId" element={<Workspace />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </TooltipProvider>
+  )
+}

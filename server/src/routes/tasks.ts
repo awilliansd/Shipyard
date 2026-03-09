@@ -1,0 +1,58 @@
+import { FastifyInstance } from 'fastify';
+import * as taskStore from '../services/taskStore.js';
+
+export async function taskRoutes(app: FastifyInstance) {
+  // All tasks across all projects
+  app.get('/api/tasks/all', async () => {
+    const tasks = await taskStore.getAllTasks();
+    return { tasks };
+  });
+
+  app.get<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/tasks',
+    async (request) => {
+      const tasks = await taskStore.getTasks(request.params.projectId);
+      return { tasks };
+    }
+  );
+
+  app.post<{ Params: { projectId: string }; Body: { title: string; description?: string; priority?: string; status?: string; promptTemplate?: string } }>(
+    '/api/projects/:projectId/tasks',
+    async (request) => {
+      const task = await taskStore.createTask(request.params.projectId, {
+        title: request.body.title,
+        description: request.body.description || '',
+        priority: (request.body.priority as any) || 'medium',
+        status: (request.body.status as any) || 'todo',
+        promptTemplate: request.body.promptTemplate,
+      });
+      return task;
+    }
+  );
+
+  app.put<{ Params: { projectId: string; taskId: string }; Body: Partial<{ title: string; description: string; priority: string; status: string; promptTemplate: string; order: number }> }>(
+    '/api/projects/:projectId/tasks/:taskId',
+    async (request, reply) => {
+      const task = await taskStore.updateTask(request.params.projectId, request.params.taskId, request.body as any);
+      if (!task) return reply.status(404).send({ error: 'Task not found' });
+      return task;
+    }
+  );
+
+  app.delete<{ Params: { projectId: string; taskId: string } }>(
+    '/api/projects/:projectId/tasks/:taskId',
+    async (request, reply) => {
+      const deleted = await taskStore.deleteTask(request.params.projectId, request.params.taskId);
+      if (!deleted) return reply.status(404).send({ error: 'Task not found' });
+      return { success: true };
+    }
+  );
+
+  app.post<{ Params: { projectId: string }; Body: { taskIds: string[] } }>(
+    '/api/projects/:projectId/tasks/reorder',
+    async (request) => {
+      const tasks = await taskStore.reorderTasks(request.params.projectId, request.body.taskIds);
+      return { tasks };
+    }
+  );
+}

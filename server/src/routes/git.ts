@@ -1,0 +1,160 @@
+import { FastifyInstance } from 'fastify';
+import * as gitService from '../services/gitService.js';
+import { getProjects } from '../services/projectDiscovery.js';
+
+async function getProjectPath(projectId: string): Promise<string | null> {
+  const projects = await getProjects();
+  const project = projects.find(p => p.id === projectId);
+  return project?.path || null;
+}
+
+export async function gitRoutes(app: FastifyInstance) {
+  app.get<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/status',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const status = await gitService.getStatus(path);
+        return status;
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  app.get<{ Params: { projectId: string }; Querystring: { file?: string } }>(
+    '/api/projects/:projectId/git/diff',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const diff = await gitService.getDiff(path, request.query.file);
+        return { diff };
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  app.post<{ Params: { projectId: string }; Body: { file: string } }>(
+    '/api/projects/:projectId/git/stage',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      await gitService.stageFile(path, request.body.file);
+      return { success: true };
+    }
+  );
+
+  app.post<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/stage-all',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      await gitService.stageAll(path);
+      return { success: true };
+    }
+  );
+
+  app.post<{ Params: { projectId: string }; Body: { file: string } }>(
+    '/api/projects/:projectId/git/unstage',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      await gitService.unstageFile(path, request.body.file);
+      return { success: true };
+    }
+  );
+
+  app.post<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/unstage-all',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      await gitService.unstageAll(path);
+      return { success: true };
+    }
+  );
+
+  app.post<{ Params: { projectId: string }; Body: { message: string } }>(
+    '/api/projects/:projectId/git/commit',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const hash = await gitService.commit(path, request.body.message);
+        return { commit: hash };
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  app.post<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/push',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        await gitService.push(path);
+        return { success: true };
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  app.post<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/pull',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        await gitService.pull(path);
+        return { success: true };
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  app.get<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/log',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const log = await gitService.getLog(path);
+        return log;
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  app.get<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/branches',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const branches = await gitService.getBranches(path);
+        return branches;
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+}
