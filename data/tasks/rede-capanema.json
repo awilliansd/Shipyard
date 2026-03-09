@@ -1,0 +1,115 @@
+{
+  "tasks": [
+    {
+      "title": "Bug no fluxo de compra",
+      "description": "Investigar e corrigir bugs remanescentes no fluxo de compra. Alguns problemas foram corrigidos no commit 80d3cc1 (construction mode, undefined res, stock decrement, auto-refund), mas podem haver issues adicionais. Necessita especificação do cenário exato do bug.",
+      "priority": "urgent",
+      "status": "done",
+      "id": "BUG-purchase-flow",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T18:44:19.581Z",
+      "order": 1,
+      "inboxAt": "2026-03-09T22:00:00.000Z",
+      "inProgressAt": "2026-03-09T18:43:14.771Z",
+      "doneAt": "2026-03-09T18:44:19.581Z"
+    },
+    {
+      "title": "Bug ao visualizar usuario no admin",
+      "description": "Bug ao acessar detalhes de um usuario no painel admin. Rota: GET /api/admin/users/:id (adminRoutes.js:95). Controller: getUser no adminController.js. Investigar erro — pode ser problema de include/associação, permissão, ou renderização no frontend.",
+      "priority": "urgent",
+      "status": "in_progress",
+      "id": "BUG-view-user",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T18:43:21.234Z",
+      "order": 2,
+      "inboxAt": "2026-03-09T22:00:00.000Z",
+      "inProgressAt": "2026-03-09T18:43:21.234Z"
+    },
+    {
+      "title": "Data dos pedidos e navegacao ao clicar",
+      "description": "Corrigir exibição de datas nos pedidos e permitir navegação ao clicar em um pedido para ver detalhes. Pode envolver: formato de data incorreto, fuso horário, ou falta de link/modal para detalhes do pedido. Componentes relevantes: OrdersList.jsx, AdminOrderManagement.jsx, OrderManagement.jsx.",
+      "priority": "high",
+      "status": "todo",
+      "id": "FIX-order-dates-nav",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 3,
+      "inboxAt": "2026-03-09T22:00:00.000Z"
+    },
+    {
+      "title": "Email de notificacao ao aprovar vendedor",
+      "description": "Enviar email ao vendedor quando sua conta for aprovada pelo admin. Atualmente approveSeller() em adminController.js:3072 atualiza o status mas NÃO envia email. Já existe email para rejeição (sendSellerRejectionNotification). Criar sendSellerApprovalNotification no emailService e chamá-lo em approveSeller(). Incluir: nome do vendedor, próximos passos (cadastrar produtos, configurar frete, conectar MercadoPago).",
+      "priority": "high",
+      "status": "todo",
+      "id": "FEAT-seller-approval-email",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 4,
+      "inboxAt": "2026-03-09T22:00:00.000Z"
+    },
+    {
+      "title": "Suporte a multiplos gateways de pagamento",
+      "description": "Arquitetar e implementar suporte a múltiplos gateways de pagamento além do MercadoPago. Atualmente todo o sistema é acoplado ao MercadoPago (PIX e cartão). Considerar: padrão Strategy para gateways, interface comum (createPayment, getPayment, refund), configuração por admin ou por vendedor. Gateways candidatos: Stripe, PagSeguro, Asaas. Escopo grande — planejar em fases.",
+      "priority": "medium",
+      "status": "backlog",
+      "id": "FEAT-payment-gateways",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 8,
+      "inboxAt": "2026-03-09T22:00:00.000Z"
+    },
+    {
+      "title": "Instancias Rede Capanema (multi-tenant)",
+      "description": "Planejar e implementar suporte a múltiplas instâncias da plataforma Rede Capanema para diferentes comunidades/redes locais. Envolve: estratégia de multi-tenancy (schema por tenant, DB por tenant, ou subdomain routing), configuração por instância (nome, logo, cores, região), deploy automatizado. Escopo grande — iniciar com planejamento arquitetural.",
+      "priority": "medium",
+      "status": "backlog",
+      "id": "FEAT-multi-instance",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 9,
+      "inboxAt": "2026-03-09T22:00:00.000Z"
+    },
+    {
+      "title": "Vendedor cadastrar MercadoPago com email diferente",
+      "description": "Permitir que vendedores conectem conta MercadoPago com email diferente do cadastrado na plataforma. Implementado no commit 2ab2700: removida validação de email matching no OAuth callback. Log de auditoria registrado quando emails diferem.",
+      "priority": "high",
+      "status": "done",
+      "id": "FEAT-mp-diff-email",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T22:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 10,
+      "doneAt": "2026-03-09T15:24:00.000Z"
+    },
+    {
+      "title": "Modal de confirmacao ao cancelar pedido",
+      "description": "Adicionar dialog de confirmacao antes de cancelar um pedido no OrdersList.jsx. Atualmente o cancelamento pode ocorrer sem confirmacao do usuario. Referencia: REVIEW item M20.",
+      "priority": "medium",
+      "status": "todo",
+      "id": "M20-cancelConfirm",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T19:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 5,
+      "inboxAt": "2026-03-09T19:00:00.000Z"
+    },
+    {
+      "title": "Empty state na pagina de favoritos",
+      "description": "Mostrar mensagem amigavel com link para explorar produtos quando o usuario nao tem favoritos. Atualmente a pagina fica em branco. Arquivo: FavoritesPage.jsx. Referencia: REVIEW item M21.",
+      "priority": "low",
+      "status": "todo",
+      "id": "M21-favoritesEmpty",
+      "projectId": "rede-capanema",
+      "createdAt": "2026-03-09T19:00:00.000Z",
+      "updatedAt": "2026-03-09T22:00:00.000Z",
+      "order": 7,
+      "inboxAt": "2026-03-09T19:00:00.000Z"
+    }
+  ]
+}
