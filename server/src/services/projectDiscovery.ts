@@ -10,6 +10,7 @@ const PROJECT_MARKERS = ['package.json', '.git', 'CLAUDE.md', 'Cargo.toml', 'go.
 const IGNORE_DIRS = new Set(['node_modules', '.git', '.cache', '.vscode', 'dist', 'build', '.next', '__pycache__']);
 
 let projectsCache: Project[] = [];
+let cachedLastScannedAt: string = new Date().toISOString();
 
 async function fileExists(path: string): Promise<boolean> {
   try {
@@ -282,18 +283,24 @@ async function loadCache(): Promise<Project[]> {
   try {
     const data = await readFile(CACHE_FILE, 'utf-8');
     const cache: ProjectsCache = JSON.parse(data);
+    if (cache.lastScannedAt) {
+      cachedLastScannedAt = cache.lastScannedAt;
+    }
     return cache.projects;
   } catch {
     return [];
   }
 }
 
-async function saveCache(projects: Project[]): Promise<void> {
+async function saveCache(projects: Project[], updateTimestamp = false): Promise<void> {
   await mkdir(DATA_DIR, { recursive: true });
   const cache: ProjectsCache = {
     projects,
-    lastScannedAt: new Date().toISOString(),
+    lastScannedAt: updateTimestamp ? new Date().toISOString() : cachedLastScannedAt,
   };
+  if (updateTimestamp) {
+    cachedLastScannedAt = cache.lastScannedAt;
+  }
   await writeFile(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
 }
 
@@ -304,7 +311,7 @@ export async function getProjects(): Promise<Project[]> {
 export async function refreshProjects(): Promise<Project[]> {
   const projects = await loadSelectedProjects();
   projectsCache = projects;
-  await saveCache(projects);
+  await saveCache(projects, true);
   return projects;
 }
 
