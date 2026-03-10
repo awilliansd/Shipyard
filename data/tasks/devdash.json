@@ -33,13 +33,15 @@
       "projectId": "devdash",
       "title": "Notificacao toast nas operacoes git",
       "description": "Adicionar feedback visual com sonner toast quando operacoes git (push, pull, commit, stage) completam com sucesso ou erro. Sonner ja esta instalado mas nao esta sendo usado em todas as operacoes. Verificar useGit.ts e adicionar toast nos onSuccess/onError das mutations.",
+      "prompt": "Implementado nos componentes (nao nos hooks): CommitForm.tsx tem toast para commit, commit+push e AI commit. GitPanel.tsx tem toast para push e pull. Stage/unstage individuais (FileChange.tsx) e stage all/unstage all nao tem toast, mas o feedback visual (arquivo muda de lista) ja e suficiente.",
       "priority": "medium",
-      "status": "in_progress",
+      "status": "done",
       "createdAt": "2026-03-08T12:00:00.000Z",
-      "updatedAt": "2026-03-09T12:00:00.000Z",
+      "updatedAt": "2026-03-10T12:00:00.000Z",
       "order": 2,
       "inboxAt": "2026-03-08T12:00:00.000Z",
-      "inProgressAt": "2026-03-09T12:00:00.000Z"
+      "inProgressAt": "2026-03-09T12:00:00.000Z",
+      "doneAt": "2026-03-10T12:00:00.000Z"
     },
     {
       "id": "tsk_dd_004",
@@ -74,12 +76,15 @@
       "projectId": "devdash",
       "title": "Contador de tarefas pendentes no ProjectCard",
       "description": "Mostrar badge com numero de tarefas pendentes (todo + in_progress) em cada ProjectCard na dashboard. Precisa de um endpoint ou incluir contagem no GET /api/projects. Ajuda a visualizar rapidamente quais projetos tem trabalho pendente.",
+      "prompt": "Implementado client-side: Dashboard.tsx calcula taskCounts por projeto a partir de useAllTasks(), passa Map para ProjectList que distribui para cada ProjectCard. Badges coloridos: azul (inbox), amarelo (in_progress), verde (done). Borda accent muda para vermelho se tem tarefa urgente.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-03-09T09:00:00.000Z",
-      "updatedAt": "2026-03-09T09:00:00.000Z",
+      "updatedAt": "2026-03-10T12:00:00.000Z",
       "order": 5,
-      "inboxAt": "2026-03-09T09:00:00.000Z"
+      "inboxAt": "2026-03-09T09:00:00.000Z",
+      "inProgressAt": "2026-03-10T12:00:00.000Z",
+      "doneAt": "2026-03-10T12:00:00.000Z"
     },
     {
       "id": "tsk_dd_007",
@@ -98,6 +103,7 @@
       "projectId": "devdash",
       "title": "Atalhos de teclado para navegacao",
       "description": "Implementar keyboard shortcuts: Ctrl+K para busca rapida (command palette), Ctrl+1/2/3 para trocar entre abas abertas, Escape para fechar dialog/modal. Criar hook useKeyboardShortcuts com registro centralizado.",
+      "prompt": "cmdk ja esta instalado como dependencia (^1.0.4) mas nao ha nenhum componente ou import usando ele. Nao existe useKeyboardShortcuts hook nem addEventListener global. Apenas handlers locais de Enter em CommitForm, ExternalLinkEditor e folder-browser.",
       "priority": "low",
       "status": "backlog",
       "createdAt": "2026-03-09T10:30:00.000Z",
@@ -110,6 +116,7 @@
       "projectId": "devdash",
       "title": "Sidebar responsiva com collapse em telas menores",
       "description": "A sidebar nao colapsa em telas menores. Implementar sidebar colapsavel com botao hamburger para telas < 768px. Manter estado collapse/expand no localStorage. Considerar usar sheet do shadcn para mobile.",
+      "prompt": "Collapse manual ja existe (toggle button, estado em localStorage com key devdash-sidebar-collapsed, w-12 collapsed vs w-64 expanded). Falta: deteccao de breakpoint, auto-collapse em mobile, Sheet component do shadcn nao esta instalado.",
       "priority": "low",
       "status": "backlog",
       "createdAt": "2026-03-09T11:00:00.000Z",
@@ -122,12 +129,30 @@
       "projectId": "devdash",
       "title": "Timestamps relativos nas tarefas",
       "description": "Mostrar timestamps relativos ('ha 2 dias', 'ha 3h') no TaskItem usando date-fns formatDistanceToNow. Exibir createdAt como tooltip e updatedAt de forma sutil abaixo do titulo. Ajuda a entender a idade e atividade das tarefas.",
+      "prompt": "Implementado em 3 componentes: TaskItem.tsx mostra timestamp relativo da coluna atual (doneAt/inProgressAt/inboxAt) no canto inferior. TaskViewer.tsx mostra timeline completa (created/started/done) com formatDistanceToNow. TaskSummary.tsx mostra createdAt relativo na lista de tarefas recentes.",
       "priority": "low",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-03-09T11:30:00.000Z",
-      "updatedAt": "2026-03-09T11:30:00.000Z",
+      "updatedAt": "2026-03-10T12:00:00.000Z",
       "order": 9,
-      "inboxAt": "2026-03-09T11:30:00.000Z"
+      "inboxAt": "2026-03-09T11:30:00.000Z",
+      "inProgressAt": "2026-03-10T12:00:00.000Z",
+      "doneAt": "2026-03-10T12:00:00.000Z"
+    },
+    {
+      "id": "tsk_dd_011",
+      "projectId": "devdash",
+      "title": "Bug: projects.json modificado a cada saveCache",
+      "description": "O arquivo data/projects.json aparecia como uncommitted change constantemente, criando loop ao tentar comitar. saveCache() regenerava lastScannedAt em toda escrita, inclusive em updateProject().",
+      "prompt": "Corrigido em projectDiscovery.ts: saveCache() agora recebe parametro updateTimestamp (default false). Apenas refreshProjects() passa true. cachedLastScannedAt preserva o valor existente do arquivo. Commit: fd1c72c.",
+      "priority": "high",
+      "status": "done",
+      "createdAt": "2026-03-10T12:00:00.000Z",
+      "updatedAt": "2026-03-10T12:00:00.000Z",
+      "order": 10,
+      "inboxAt": "2026-03-10T12:00:00.000Z",
+      "inProgressAt": "2026-03-10T12:00:00.000Z",
+      "doneAt": "2026-03-10T12:00:00.000Z"
     }
   ]
 }

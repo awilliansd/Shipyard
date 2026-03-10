@@ -219,7 +219,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                         )}
                       >
                         <ProjectAvatar name={p.name} className="w-7 h-7" />
-                        {((p.gitAhead ?? 0) > 0 || (p.gitBehind ?? 0) > 0 || (p.gitStaged ?? 0) > 0 || (p.gitUnstaged ?? 0) > 0 || (p.gitUntracked ?? 0) > 0) && (
+                        {((p.gitAhead ?? 0) > 0 || (p.gitBehind ?? 0) > 0 || (p.gitStaged ?? 0) > 0 || (p.gitUnstaged ?? 0) > 0) && (
                           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-400" />
                         )}
                       </button>
@@ -236,22 +236,34 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {favorites.length > 0 && (
             <>
               <div className="w-6 border-t my-1" />
-              {favorites.map(p => (
-                <Tooltip key={p.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => openTab(p.id)}
-                      className={cn(
-                        'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                        location.pathname === `/project/${p.id}` ? 'ring-1 ring-primary' : 'hover:bg-accent/50'
-                      )}
-                    >
-                      <ProjectAvatar name={p.name} className="w-7 h-7" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{p.name}</TooltipContent>
-                </Tooltip>
-              ))}
+              {favorites.map(p => {
+                const gitInfo = []
+                if ((p.gitAhead ?? 0) > 0) gitInfo.push(`${p.gitAhead} unpushed`)
+                if ((p.gitBehind ?? 0) > 0) gitInfo.push(`${p.gitBehind} to pull`)
+                const changes = (p.gitStaged ?? 0) + (p.gitUnstaged ?? 0)
+                if (changes > 0) gitInfo.push(`${changes} uncommitted`)
+                return (
+                  <Tooltip key={p.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => openTab(p.id)}
+                        className={cn(
+                          'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                          location.pathname === `/project/${p.id}` ? 'ring-1 ring-primary' : 'hover:bg-accent/50'
+                        )}
+                      >
+                        <ProjectAvatar name={p.name} className="w-7 h-7" />
+                        {((p.gitAhead ?? 0) > 0 || (p.gitBehind ?? 0) > 0 || (p.gitStaged ?? 0) > 0 || (p.gitUnstaged ?? 0) > 0) && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-400" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {p.name}{gitInfo.length > 0 && ` (${gitInfo.join(', ')})`}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
             </>
           )}
         </nav>
