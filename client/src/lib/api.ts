@@ -86,4 +86,27 @@ export const api = {
 
   // Browse filesystem
   browse: (path: string) => request<{ directories: { name: string; path: string }[] }>('/browse', { method: 'POST', body: JSON.stringify({ path }) }),
+
+  // Claude AI
+  getClaudeStatus: () => request<{ configured: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
+  saveClaudeConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
+    request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),
+  deleteClaudeConfig: () => request<{ ok: boolean }>('/claude/config', { method: 'DELETE' }),
+  testClaudeKey: (apiKey: string) =>
+    request<{ ok: boolean; error?: string }>('/claude/config/test', { method: 'POST', body: JSON.stringify({ apiKey }) }),
+  analyzeTask: (projectId: string, title: string, taskId?: string) =>
+    request<{ description: string; prompt: string }>('/claude/analyze-task', { method: 'POST', body: JSON.stringify({ projectId, title, taskId }) }),
+  summarizeTasks: (projectId: string) =>
+    request<{ summary: string }>('/claude/summarize', { method: 'POST', body: JSON.stringify({ projectId }) }),
+
+  // MCP Server
+  getMcpStatus: () => request<{
+    enabled: boolean;
+    requireAuth: boolean;
+    clients: Array<{ clientId: string; clientName: string; createdAt: string }>;
+  }>('/mcp/status'),
+  saveMcpConfig: (data: { enabled: boolean; requireAuth?: boolean }) =>
+    request<{ ok: boolean; enabled: boolean; requireAuth: boolean }>('/mcp/config', { method: 'POST', body: JSON.stringify(data) }),
+  revokeMcpClient: (clientId: string) =>
+    request<{ ok: boolean }>(`/mcp/clients/${clientId}`, { method: 'DELETE' }),
 };

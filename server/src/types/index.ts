@@ -50,3 +50,60 @@ export interface Settings {
   // Paths of projects the user has added to the dashboard
   selectedProjects: string[];
 }
+
+// ── Claude API Integration ──────────────────────────────
+
+export interface ClaudeConfig {
+  apiKey: string;
+  model: string;
+  maxTokens: number;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// ── MCP Server Integration ──────────────────────────────
+
+export interface McpConfig {
+  enabled: boolean;
+  requireAuth: boolean;
+}
+
+export interface OAuthClient {
+  clientId: string;
+  clientSecret: string;
+  clientName: string;
+  redirectUris: string[];
+  createdAt: string;
+}
+
+export interface OAuthToken {
+  accessToken: string;
+  refreshToken: string;
+  clientId: string;
+  scope: string;
+  expiresAt: number;
+  createdAt: number;
+}
+
+export interface McpAuthData {
+  jwtSecret: string;
+  clients: OAuthClient[];
+  authCodes: Array<{
+    code: string;
+    clientId: string;
+    codeChallenge: string;
+    codeChallengeMethod: string;
+    redirectUri: string;
+    expiresAt: number;
+    scope: string;
+  }>;
+  refreshTokens: Array<{
+    token: string;
+    clientId: string;
+    scope: string;
+    expiresAt: number;
+  }>;
+}

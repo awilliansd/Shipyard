@@ -4,11 +4,11 @@ import {
   LayoutDashboard, ClipboardList, GitBranch, Terminal, Settings, FolderOpen,
   Star, ArrowUp, ArrowDown, FileEdit, Cloud, Download, Keyboard, ChevronDown,
   Layers, Search, ExternalLink, GripVertical, Copy, Plus, Trash2, RefreshCw,
-  MonitorPlay, HelpCircle
+  MonitorPlay, HelpCircle, Sparkles, Server
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type SectionId = 'overview' | 'dashboard' | 'workspace' | 'tasks' | 'terminal' | 'git' | 'sync' | 'settings' | 'shortcuts' | 'data' | 'electron'
+type SectionId = 'overview' | 'dashboard' | 'workspace' | 'tasks' | 'terminal' | 'git' | 'sync' | 'claude' | 'mcp' | 'settings' | 'shortcuts' | 'data' | 'electron'
 
 const sections: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Overview', icon: <HelpCircle className="h-4 w-4" /> },
@@ -18,6 +18,8 @@ const sections: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: 'terminal', label: 'Terminal', icon: <Terminal className="h-4 w-4" /> },
   { id: 'git', label: 'Git', icon: <GitBranch className="h-4 w-4" /> },
   { id: 'sync', label: 'Sync & Export', icon: <Cloud className="h-4 w-4" /> },
+  { id: 'claude', label: 'Claude AI', icon: <Sparkles className="h-4 w-4" /> },
+  { id: 'mcp', label: 'MCP Server', icon: <Server className="h-4 w-4" /> },
   { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
   { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard className="h-4 w-4" /> },
   { id: 'data', label: 'Data & Storage', icon: <Download className="h-4 w-4" /> },
@@ -60,6 +62,8 @@ export function Help() {
             {active === 'terminal' && <SectionTerminal />}
             {active === 'git' && <SectionGit />}
             {active === 'sync' && <SectionSync />}
+            {active === 'claude' && <SectionClaude />}
+            {active === 'mcp' && <SectionMcp />}
             {active === 'settings' && <SectionSettings />}
             {active === 'shortcuts' && <SectionShortcuts />}
             {active === 'data' && <SectionData />}
@@ -519,6 +523,131 @@ function SectionData() {
       <P>
         Everything else runs 100% locally.
       </P>
+    </>
+  )
+}
+
+function SectionClaude() {
+  return (
+    <>
+      <H2>Claude AI Integration</H2>
+      <P>
+        Shipyard integrates with the Anthropic Claude API to provide AI-powered features
+        directly in your dashboard. This requires an Anthropic API key (pay-per-use billing).
+      </P>
+
+      <H3>Setup</H3>
+      <Bullet title="Get an API Key">
+        Sign up at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">console.anthropic.com</a> and create an API key in Settings &gt; API Keys.
+      </Bullet>
+      <Bullet title="Configure in Shipyard">
+        Go to Settings &gt; Claude AI and enter your key. Click "Test" to verify, then "Save".
+      </Bullet>
+      <Bullet title="Security">
+        Your API key is encrypted with AES-256-GCM and stored server-side only. It never reaches the browser.
+      </Bullet>
+
+      <H3>Features</H3>
+      <Bullet title="Chat Panel">
+        Available in the workspace sidebar. Chat with Claude about your project — it has context
+        about your tasks, git status, and file structure. Responses stream in real-time via SSE.
+      </Bullet>
+      <Bullet title="AI Task Analysis">
+        In the task editor, click "AI Analyze" to auto-generate the description (user-facing)
+        and technical details/prompt fields based on the task title and project context.
+      </Bullet>
+      <Bullet title="Task Summarization">
+        Get an AI summary of all tasks in a project — highlights priorities, blockers, and progress.
+      </Bullet>
+
+      <H3>Models</H3>
+      <P>
+        Choose your preferred model in Settings. Available options:
+      </P>
+      <Bullet title="Claude Sonnet 4.5">Best balance of speed and quality (recommended)</Bullet>
+      <Bullet title="Claude Opus 4.5">Most capable, best for complex analysis</Bullet>
+      <Bullet title="Claude Haiku 4.5">Fastest, most affordable</Bullet>
+
+      <H3>Configuration</H3>
+      <InfoBox>
+        <p>Settings &gt; Claude AI — configure API key, model, max tokens</p>
+        <p>Data file: <code className="bg-muted px-1 rounded">data/claude.json</code> (encrypted key)</p>
+        <p>Encryption key: <code className="bg-muted px-1 rounded">data/.claude-key</code></p>
+      </InfoBox>
+    </>
+  )
+}
+
+function SectionMcp() {
+  return (
+    <>
+      <H2>MCP Server</H2>
+      <P>
+        Shipyard can act as a <strong>Model Context Protocol (MCP)</strong> server, allowing
+        Claude Desktop, Claude Code, or any MCP-compatible client to connect and interact with
+        your projects and tasks from outside the dashboard.
+      </P>
+
+      <H3>What is MCP?</H3>
+      <P>
+        MCP is an open protocol by Anthropic that lets AI assistants connect to external tools
+        and data sources. When enabled, Claude can directly list your projects, create/update tasks,
+        view git status, and search across all tasks — all through natural language.
+      </P>
+
+      <H3>Setup</H3>
+      <Bullet title="Enable">Go to Settings &gt; MCP Server and toggle "Enable MCP Server".</Bullet>
+      <Bullet title="Authorization">
+        By default, OAuth authorization is required. Clients must go through a consent flow.
+        For local-only use, you can disable auth.
+      </Bullet>
+
+      <H3>Connect from Claude Desktop</H3>
+      <P>
+        Add this to your <code className="bg-muted px-1 rounded">claude_desktop_config.json</code>:
+      </P>
+      <InfoBox>
+        <pre className="text-[11px]">{`{
+  "mcpServers": {
+    "shipyard": {
+      "url": "http://localhost:5420/mcp"
+    }
+  }
+}`}</pre>
+      </InfoBox>
+
+      <H3>Connect from Claude Code</H3>
+      <P>
+        Run this command or add to <code className="bg-muted px-1 rounded">.claude/settings.json</code>:
+      </P>
+      <InfoBox>
+        <p><code className="bg-muted px-1 rounded">claude mcp add shipyard --transport http --url http://localhost:5420/mcp</code></p>
+      </InfoBox>
+
+      <H3>Available Tools</H3>
+      <Bullet title="list_projects">List all projects with git info and tech stack</Bullet>
+      <Bullet title="get_project">Get detailed info about a specific project</Bullet>
+      <Bullet title="list_tasks / get_all_tasks">List tasks for a project or across all projects</Bullet>
+      <Bullet title="create_task">Create a new task with title, description, priority, status</Bullet>
+      <Bullet title="update_task">Update any task field (title, status, priority, etc.)</Bullet>
+      <Bullet title="delete_task">Delete a task</Bullet>
+      <Bullet title="get_git_status / get_git_log">Read-only git information</Bullet>
+      <Bullet title="search_tasks">Search tasks by keyword across all projects</Bullet>
+
+      <H3>Security</H3>
+      <Bullet title="OAuth 2.1 + PKCE">Secure authorization flow with dynamic client registration</Bullet>
+      <Bullet title="JWT Tokens">Access tokens expire in 1 hour, refresh tokens in 30 days</Bullet>
+      <Bullet title="Localhost Only">Server binds to localhost by default</Bullet>
+      <Bullet title="Read-only Git">No push/commit/stage operations exposed — git info is read-only</Bullet>
+      <Bullet title="Revoke Access">Revoke any client from Settings &gt; MCP Server</Bullet>
+
+      <H3>Configuration</H3>
+      <InfoBox>
+        <p>Settings &gt; MCP Server — enable/disable, auth toggle, client management</p>
+        <p>Data files: <code className="bg-muted px-1 rounded">data/mcp-config.json</code>, <code className="bg-muted px-1 rounded">data/mcp-auth.json</code></p>
+        <p>Protocol: MCP JSON-RPC over Streamable HTTP</p>
+        <p>Endpoint: <code className="bg-muted px-1 rounded">POST /mcp</code></p>
+      </InfoBox>
     </>
   )
 }

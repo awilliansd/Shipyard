@@ -39,6 +39,7 @@ shipyard/
 ├── client/                        # Frontend (porta 5421)
 │   ├── src/
 │   │   ├── App.tsx                # Rotas: /, /tasks, /project/:id, /settings, /help
+│   │   │                          # Help sections: +Claude AI, +MCP Server
 │   │   ├── main.tsx               # Entry point com QueryClientProvider
 │   │   ├── index.css              # Tema dark/light (CSS variables shadcn)
 │   │   ├── components/
@@ -69,6 +70,14 @@ shipyard/
 │   │   │   │   ├── FileChange.tsx     # Arquivo individual com diff
 │   │   │   │   ├── CommitForm.tsx     # Input de mensagem + commit
 │   │   │   │   └── GitLog.tsx         # Ultimos commits
+│   │   │   ├── claude/
+│   │   │   │   ├── ChatPanel.tsx          # Chat AI no workspace sidebar (SSE streaming)
+│   │   │   │   ├── ChatMessage.tsx        # Mensagem com markdown (react-markdown)
+│   │   │   │   ├── ClaudeConfigDialog.tsx # Dialog para API key + modelo + max tokens
+│   │   │   │   ├── ClaudeSettingsCard.tsx # Card na pagina Settings
+│   │   │   │   └── TaskAnalysisButton.tsx # Botao "AI Analyze" no TaskEditor
+│   │   │   ├── mcp/
+│   │   │   │   └── McpSettingsCard.tsx    # Card MCP na pagina Settings (toggle, URL, config)
 │   │   │   └── terminals/
 │   │   │       ├── TerminalLauncher.tsx    # Botoes: Claude, Dev, Shell (integrado ou nativo)
 │   │   │       ├── IntegratedTerminal.tsx # Componente xterm.js com WebSocket
@@ -78,7 +87,9 @@ shipyard/
 │   │   │   ├── useTasks.ts        # CRUD tarefas + reorder (invalida cache global e por projeto)
 │   │   │   ├── useGit.ts          # Git operations com 5s refetch
 │   │   │   ├── useSheetSync.ts    # Google Sheets sync hooks (config em localStorage)
-│   │   │   └── useTerminal.ts    # Hook para sessoes de terminal integrado
+│   │   │   ├── useTerminal.ts     # Hook para sessoes de terminal integrado
+│   │   │   ├── useClaude.ts       # Claude API hooks + SSE streaming chat
+│   │   │   └── useMcp.ts          # MCP server status/config hooks
 │   │   ├── lib/
 │   │   │   ├── api.ts             # Fetch wrapper para todas as rotas do backend
 │   │   │   ├── sheetsAdapter.ts   # Converte Task[] <-> formato Google Sheets
@@ -113,6 +124,8 @@ shipyard/
 │   │   │   ├── terminals.ts       # POST launch (gnome-terminal/wt.exe/Terminal.app), folder
 │   │   │   ├── settings.ts       # GET settings + POST /api/browse (filesystem navigation)
 │   │   │   ├── sync.ts           # Proxy stateless para Google Sheets via Apps Script
+│   │   │   ├── claude.ts         # Claude API: status, config, chat (SSE), analyze, summarize
+│   │   │   ├── mcp.ts            # MCP JSON-RPC endpoint + OAuth 2.1 (register, authorize, token)
 │   │   │   └── terminalWs.ts    # WebSocket route para terminal integrado (xterm ↔ pty)
 │   │   ├── services/
 │   │   │   ├── projectDiscovery.ts  # Selecao manual de projetos (scan + add/remove)
@@ -120,7 +133,11 @@ shipyard/
 │   │   │   ├── taskStore.ts         # CRUD JSON com timestamps de status
 │   │   │   ├── terminalLauncher.ts  # Multiplataforma: gnome-terminal (Linux) / Terminal.app (macOS) / wt.exe (Windows)
 │   │   │   ├── terminalService.ts   # Gerencia sessoes PTY (node-pty) para terminal integrado
-│   │   │   └── settingsStore.ts     # data/settings.json com selectedProjects[]
+│   │   │   ├── settingsStore.ts     # data/settings.json com selectedProjects[]
+│   │   │   ├── claudeService.ts     # Anthropic API wrapper: encrypt key, stream chat, analyze, summarize
+│   │   │   ├── claudeContextBuilder.ts # Monta system prompt com context do projeto/tasks/git
+│   │   │   ├── mcpServer.ts         # MCP tool registry + handler (list_projects, create_task, etc.)
+│   │   │   └── mcpAuth.ts           # OAuth 2.1: client registration, PKCE auth codes, JWT tokens
 │   │   └── types/
 │   │       └── index.ts           # Project, Task, Settings, ProjectsCache, TasksFile
 │   └── package.json
@@ -128,6 +145,10 @@ shipyard/
 ├── data/                          # Persistencia (criado automaticamente)
 │   ├── projects.json              # Cache dos projetos selecionados
 │   ├── settings.json              # { selectedProjects: string[] }
+│   ├── claude.json                # API key encriptada + model + maxTokens
+│   ├── .claude-key                # Chave AES-256-GCM para encriptar API key
+│   ├── mcp-config.json            # { enabled, requireAuth }
+│   ├── mcp-auth.json              # JWT secret, OAuth clients, auth codes, refresh tokens
 │   └── tasks/                     # Um JSON por projeto
 │       └── {projectId}.json       # { tasks: Task[] }
 │
@@ -196,6 +217,17 @@ interface Task {
 interface Settings {
   selectedProjects: string[];  // Paths absolutos dos projetos adicionados
 }
+
+interface ClaudeConfig {
+  apiKey: string;              // Encriptado com AES-256-GCM em data/claude.json
+  model: string;               // ex: "claude-sonnet-4-5-20250929"
+  maxTokens: number;           // Padrao 4096
+}
+
+interface McpConfig {
+  enabled: boolean;            // data/mcp-config.json
+  requireAuth: boolean;        // OAuth 2.1 required (padrao true)
+}
 ```
 
 ## Rotas da API
@@ -243,6 +275,30 @@ interface Settings {
 - `POST /api/terminal/sessions` - Cria sessao { projectId, type?, cols?, rows? } → { id, title, ... }
 - `DELETE /api/terminal/sessions/:sessionId` - Mata sessao PTY
 - `WS /ws/terminal/:sessionId` - WebSocket: input/output/resize/exit
+
+### Claude AI
+- `GET /api/claude/status` - Status: { configured, model, maxTokens } (nunca expoe a API key)
+- `POST /api/claude/config` - Salva config { apiKey, model, maxTokens }
+- `DELETE /api/claude/config` - Remove API key
+- `POST /api/claude/config/test` - Testa API key { apiKey } → { ok, error? }
+- `POST /api/claude/chat` - Chat streaming via SSE { projectId?, messages[], systemContext? }
+- `POST /api/claude/analyze-task` - Gera description+prompt { projectId, title, taskId? }
+- `POST /api/claude/summarize` - Resume tarefas { projectId } → { summary }
+
+### MCP Server
+- `GET /api/mcp/status` - Status: { enabled, requireAuth, clients[] }
+- `POST /api/mcp/config` - Configura { enabled, requireAuth? }
+- `DELETE /api/mcp/clients/:clientId` - Revoga acesso de um client
+- `POST /mcp` - Endpoint MCP JSON-RPC (Streamable HTTP transport)
+- `GET /mcp` - SSE endpoint para notificacoes server→client
+- `DELETE /mcp` - Terminacao de sessao MCP
+
+### MCP OAuth 2.1
+- `GET /.well-known/oauth-authorization-server` - Metadata (RFC 8414)
+- `POST /register` - Dynamic Client Registration (RFC 7591)
+- `GET /authorize` - Pagina de consentimento OAuth
+- `POST /authorize` - Processa aprovacao/negacao
+- `POST /token` - Token exchange (authorization_code, refresh_token)
 
 ### Sistema
 - `GET /api/settings` - Configuracoes
@@ -315,6 +371,35 @@ interface Settings {
 - Scripts: `pnpm dist`, `dist:win`, `dist:mac`, `dist:linux`
 - Dev mode Electron: `pnpm dev:electron` (Vite HMR + Electron window)
 - Arquivos: `electron/main.ts`, `electron/preload.ts`, `electron-builder.yml`
+
+### Claude AI Integration (via API Key)
+- Integra Anthropic Claude API diretamente no dashboard via API key (pay-per-use)
+- **API key encriptada** com AES-256-GCM no servidor (`data/claude.json`) — nunca chega ao browser
+- **Chat panel** no workspace sidebar: conversa com Claude com contexto do projeto (tasks, git, files)
+- Streaming de respostas via **Server-Sent Events (SSE)** — tempo real
+- **AI Analyze**: botao no TaskEditor gera description + prompt automaticamente
+- **Task Summarization**: resume progresso do projeto via Claude
+- **Context builder**: monta system prompt com info do projeto, tasks, git status, file tree
+- Modelos disponiveis: Sonnet 4.5 (padrao), Opus 4.5, Haiku 4.5
+- Configuracao em Settings > Claude AI (API key, modelo, max tokens)
+- Teste de conexao antes de salvar
+- Arquivos server: `claudeService.ts`, `claudeContextBuilder.ts`, `routes/claude.ts`
+- Arquivos client: `ChatPanel.tsx`, `ClaudeConfigDialog.tsx`, `ClaudeSettingsCard.tsx`, `TaskAnalysisButton.tsx`, `useClaude.ts`
+
+### MCP Server (Claude acessa Shipyard de fora)
+- Shipyard como **MCP server** (Model Context Protocol) via Streamable HTTP transport
+- Claude Desktop, Claude Code, ou qualquer client MCP pode conectar ao Shipyard
+- **OAuth 2.1 + PKCE**: autorizacao segura com registro dinamico de clients (RFC 7591)
+- **JWT tokens**: access token (1h), refresh token (30 dias) com rotacao
+- **Pagina de consentimento**: HTML simples servido pelo backend no `/authorize`
+- **11 MCP tools**: list_projects, get_project, list_tasks, get_all_tasks, get_task, create_task, update_task, delete_task, get_git_status, get_git_log, search_tasks
+- **MCP resources**: shipyard://projects, shipyard://tasks/all
+- Git via MCP e **read-only** (sem push/commit/stage por seguranca)
+- Configuracao em Settings > MCP Server (enable, auth toggle, revoke clients)
+- Config snippets para Claude Desktop e Claude Code copiáveis na UI
+- Endpoint: `POST /mcp` (JSON-RPC), `GET /mcp` (SSE), `DELETE /mcp` (session end)
+- Arquivos server: `mcpServer.ts`, `mcpAuth.ts`, `routes/mcp.ts`
+- Arquivos client: `McpSettingsCard.tsx`, `useMcp.ts`
 
 ### Onboarding (first-run)
 - WelcomeWizard exibido na primeira visita (se nao ha projetos adicionados)
@@ -452,9 +537,9 @@ O `terminalLauncher.ts` detecta o OS via `os.platform()` e usa comandos nativos:
 
 ## Dependencias Principais
 
-**Frontend**: react, react-dom, vite, @vitejs/plugin-react-swc, tailwindcss, @tanstack/react-query, react-router-dom, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, lucide-react, sonner, date-fns, cmdk, @xterm/xterm, @xterm/addon-fit, @xterm/addon-web-links
+**Frontend**: react, react-dom, vite, @vitejs/plugin-react-swc, tailwindcss, @tanstack/react-query, react-router-dom, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, lucide-react, sonner, date-fns, cmdk, @xterm/xterm, @xterm/addon-fit, @xterm/addon-web-links, react-markdown, remark-gfm
 
-**Backend**: fastify, @fastify/cors, @fastify/static, @fastify/websocket, simple-git, tsx, nanoid, node-pty (optional)
+**Backend**: fastify, @fastify/cors, @fastify/static, @fastify/websocket, simple-git, tsx, nanoid, @anthropic-ai/sdk, jose, node-pty (optional)
 
 **Desktop**: electron, electron-builder, cross-env (devDependencies na raiz)
 

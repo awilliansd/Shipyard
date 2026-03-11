@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCreateTask, useUpdateTask, type Task } from '@/hooks/useTasks'
+import { TaskAnalysisButton } from '@/components/claude/TaskAnalysisButton'
 
 interface TaskEditorProps {
   projectId: string
@@ -63,7 +64,18 @@ export function TaskEditor({ projectId, task, open, onOpenChange }: TaskEditorPr
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
-            <label className="text-sm font-medium">Title</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Title</label>
+              <TaskAnalysisButton
+                projectId={projectId}
+                taskId={task?.id}
+                title={title}
+                onResult={({ description: d, prompt: p }) => {
+                  if (d) setDescription(d)
+                  if (p) setPrompt(p)
+                }}
+              />
+            </div>
             <Input
               value={title}
               onChange={e => setTitle(e.target.value)}

@@ -167,6 +167,7 @@ export function IntegratedTerminal({ sessionId, isActive, onExit }: IntegratedTe
       }
       // Ctrl+V or Ctrl+Shift+V: paste from clipboard
       if (ev.ctrlKey && (ev.key === 'v' || ev.key === 'V') && ev.type === 'keydown') {
+        ev.preventDefault() // Prevent browser's native paste event (which would cause duplicate via onData)
         navigator.clipboard.readText().then((text) => {
           if (text && wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ type: 'input', data: text }))

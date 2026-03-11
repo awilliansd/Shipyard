@@ -10,6 +10,8 @@ import { terminalRoutes } from './routes/terminals.js';
 import { terminalWsRoutes } from './routes/terminalWs.js';
 import { settingsRoutes } from './routes/settings.js';
 import { syncRoutes } from './routes/sync.js';
+import { claudeRoutes } from './routes/claude.js';
+import { mcpRoutes } from './routes/mcp.js';
 import { initProjectDiscovery } from './services/projectDiscovery.js';
 import { loadSettings } from './services/settingsStore.js';
 import { isAvailable as isTerminalAvailable } from './services/terminalService.js';
@@ -27,8 +29,29 @@ const origins = IS_ELECTRON
   ? [`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`]
   : ['http://localhost:5421'];
 
-await app.register(cors, { origin: origins });
+await app.register(cors, {
+  origin: (origin, cb) => {
+    // Allow dashboard origins
+    if (!origin || origins.includes(origin)) {
+      cb(null, true);
+    } else {
+      // Allow MCP client origins (OAuth flow)
+      cb(null, true);
+    }
+  },
+  credentials: true,
+});
 await app.register(websocket);
+
+// Support form-encoded bodies (for OAuth consent form)
+app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, (req, body, done) => {
+  const params = new URLSearchParams(body as string);
+  const result: Record<string, string> = {};
+  for (const [key, value] of params) {
+    result[key] = value;
+  }
+  done(null, result);
+});
 
 // In production (Electron), serve the built client as static files
 if (STATIC_DIR) {
@@ -55,6 +78,8 @@ await app.register(terminalRoutes);
 await app.register(terminalWsRoutes);
 await app.register(settingsRoutes);
 await app.register(syncRoutes);
+await app.register(claudeRoutes);
+await app.register(mcpRoutes);
 
 // SPA fallback: serve index.html for all non-API, non-WS routes
 if (STATIC_DIR) {
@@ -70,6 +95,8 @@ try {
   await app.listen({ port: PORT, host: HOST });
   console.log(`Shipyard server running on http://${HOST}:${PORT}`);
   console.log(`Terminal integration: ${isTerminalAvailable() ? 'available' : 'disabled (node-pty not found)'}`);
+  console.log(`Claude API: check /api/claude/status`);
+  console.log(`MCP Server: endpoint at /mcp (configure in Settings)`);
   if (IS_ELECTRON) console.log('Mode: Electron embedded');
   if (STATIC_DIR) console.log(`Serving static files from: ${STATIC_DIR}`);
 } catch (err: any) {

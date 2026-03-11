@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { FolderBrowser } from '@/components/ui/folder-browser'
 import { SyncSettingsCard } from '@/components/sync/SyncSettingsCard'
+import { ClaudeSettingsCard } from '@/components/claude/ClaudeSettingsCard'
+import { McpSettingsCard } from '@/components/mcp/McpSettingsCard'
 import { Search, Plus, FolderOpen, Check, Loader2, GitBranch, X, FolderSearch, Download, Upload } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useProjects } from '@/hooks/useProjects'
@@ -354,6 +356,12 @@ export function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* Claude AI */}
+          <ClaudeSettingsCard />
+
+          {/* MCP Server */}
+          <McpSettingsCard />
 
           {/* Integrations / Sync */}
           <SyncSettingsCard projects={projects || []} />

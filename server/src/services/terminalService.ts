@@ -100,13 +100,21 @@ export async function createSession(
   const typeLabels: Record<string, string> = { claude: 'Claude', 'claude-yolo': 'Claude', dev: 'Dev', shell: 'Shell' };
   const title = `[${shortName}] ${typeLabels[type] || 'Shell'}`;
 
-  const pty = nodePty.spawn(shell, shellArgs, {
+  const spawnOptions: Record<string, any> = {
     name: 'xterm-256color',
     cols,
     rows,
     cwd: projectPath,
     env,
-  });
+    handleFlowControl: true,
+  };
+
+  // On Windows, explicitly use ConPTY for better interactive prompt support
+  if (os === 'win32') {
+    spawnOptions.useConpty = true;
+  }
+
+  const pty = nodePty.spawn(shell, shellArgs, spawnOptions);
 
   const session: TerminalSession = {
     id,
@@ -119,11 +127,13 @@ export async function createSession(
 
   sessions.set(id, session);
 
-  // Send initial command after a short delay to let the shell initialize
+  // Send initial command after shell initializes
+  // Use a longer delay on Windows (PowerShell startup is slower)
   if (initialCommand) {
+    const delay = os === 'win32' ? 800 : 400;
     setTimeout(() => {
       pty.write(initialCommand + '\r');
-    }, 300);
+    }, delay);
   }
 
   return id;
