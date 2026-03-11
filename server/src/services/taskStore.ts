@@ -232,9 +232,15 @@ export async function applyCsvChanges(
 }
 
 export async function replaceTasks(projectId: string, incoming: Partial<Task>[]): Promise<Task[]> {
+  // Read existing tasks to preserve timestamps that aren't in the incoming data
+  // (sync payloads like SheetRow don't carry createdAt/inboxAt/inProgressAt/doneAt)
+  const existingTasks = await readTasks(projectId);
+  const existingMap = new Map(existingTasks.map(t => [t.id, t]));
   const now = new Date().toISOString();
+
   const tasks: Task[] = incoming.map((t, i) => {
     const status = (t.status as Task['status']) || 'todo';
+    const existing = t.id ? existingMap.get(t.id) : undefined;
     return {
       title: t.title || 'Untitled',
       description: t.description || '',
@@ -243,10 +249,14 @@ export async function replaceTasks(projectId: string, incoming: Partial<Task>[])
       prompt: t.prompt,
       id: t.id || nanoid(10),
       projectId,
-      createdAt: t.createdAt || now,
+      createdAt: t.createdAt || existing?.createdAt || now,
       updatedAt: t.updatedAt || now,
       order: t.order ?? i,
-      ...buildCascadingTimestamps(status, now, { inboxAt: t.inboxAt, inProgressAt: t.inProgressAt, doneAt: t.doneAt }),
+      ...buildCascadingTimestamps(status, now, {
+        inboxAt: t.inboxAt || existing?.inboxAt,
+        inProgressAt: t.inProgressAt || existing?.inProgressAt,
+        doneAt: t.doneAt || existing?.doneAt,
+      }),
     };
   });
   await writeTasks(projectId, tasks);

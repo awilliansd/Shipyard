@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { sheetRowsToTasks, tasksToSheetPayload, mergeTasks, diffSheetWithLocal, type SheetDiff, type SheetSyncOptions } from '@/lib/sheetsAdapter'
+import { getLastPushAt as getAutoSyncLastPushAt } from '@/lib/sync/autoSync'
 import type { Task } from './useTasks'
 import { toast } from 'sonner'
 
@@ -218,8 +219,9 @@ export function useAutoSync(projectId: string) {
     const syncOpts: SheetSyncOptions = { includePrompt: config.syncPrompt !== false }
 
     const silentMerge = async () => {
-      // Guard: skip if a push just happened (prevent loop)
+      // Guard: skip if a push just happened (prevent loop / resurrecting deleted tasks)
       if (Date.now() - lastPushAt < PUSH_GUARD_MS) return
+      if (Date.now() - getAutoSyncLastPushAt() < PUSH_GUARD_MS) return
       if (pullingRef.current) return
 
       pullingRef.current = true

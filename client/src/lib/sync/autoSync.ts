@@ -37,10 +37,14 @@ async function runAutoSync(projectId: string) {
   const sheetsConfig = readProviderConfig(projectId, 'google-sheets')
   if (sheetsConfig?.enabled && sheetsConfig.settings?.url) {
     const provider = getProvider('google-sheets')
-    if (provider?.merge) {
+    if (provider?.push) {
       try {
+        // Push local state directly (don't merge).
+        // This is triggered by local mutations (create/update/delete),
+        // so local is the source of truth. Merging would resurrect
+        // tasks that were just deleted locally.
         const { tasks: localTasks } = await api.getTasks(projectId)
-        const result = await provider.merge(sheetsConfig, localTasks as Task[])
+        await provider.push(sheetsConfig, localTasks as Task[])
 
         lastPushAt = Date.now()
         writeProviderConfig(projectId, 'google-sheets', {
