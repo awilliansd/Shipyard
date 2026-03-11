@@ -125,7 +125,7 @@ export function SheetSyncPanel({ projectId, tasks }: SheetSyncPanelProps) {
     })
     setPopoverOpen(false)
     toast.success('Google Sheet sync configured')
-  }, [urlInput, autoSync, config, save])
+  }, [urlInput, autoSync, syncPrompt, config, save])
 
   const handleTest = useCallback(() => {
     const url = urlInput.trim()
