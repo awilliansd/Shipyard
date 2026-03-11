@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Star, FolderOpen, RefreshCw, Settings, ClipboardList, PanelLeftClose, PanelLeft, ArrowUp, ArrowDown, FileEdit, Search } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, RefreshCw, Settings, ClipboardList, PanelLeftClose, PanelLeft, ArrowUp, ArrowDown, FileEdit, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -391,7 +391,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 <ProjectAvatar name={p.name} className="w-5 h-5 shrink-0" />
                 <span className="truncate flex-1">{p.name}</span>
                 <GitIndicators project={p} />
-                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500 shrink-0" />
               </button>
             ))}
           </>

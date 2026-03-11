@@ -308,6 +308,24 @@ export async function getProjects(): Promise<Project[]> {
   return projectsCache;
 }
 
+/** Lightweight refresh: only updates git status, skips tech stack detection */
+export async function refreshGitStatus(): Promise<Project[]> {
+  const updated = await Promise.all(
+    projectsCache.map(async (p) => {
+      if (!p.isGitRepo) return p;
+      try {
+        const gitInfo = await detectGitInfo(p.path);
+        return { ...p, ...gitInfo };
+      } catch {
+        return p;
+      }
+    })
+  );
+  projectsCache = updated;
+  // Don't save to disk on every git refresh — too frequent
+  return updated;
+}
+
 export async function refreshProjects(): Promise<Project[]> {
   const projects = await loadSelectedProjects();
   projectsCache = projects;
@@ -327,8 +345,13 @@ export async function initProjectDiscovery(): Promise<void> {
   // Load cache for instant response
   projectsCache = await loadCache();
 
-  // Refresh in background
+  // Full refresh on startup (detects tech stack, git, etc.)
   refreshProjects().then(() => {
     console.log(`Loaded ${projectsCache.length} projects`);
   });
+
+  // Lightweight git refresh every 15s (only updates git status fields)
+  setInterval(() => {
+    refreshGitStatus().catch(() => {});
+  }, 15000);
 }
