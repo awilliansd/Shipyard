@@ -91,7 +91,7 @@ export async function mcpRoutes(app: FastifyInstance) {
 
   // Authorization Server Metadata (RFC 8414)
   app.get('/.well-known/oauth-authorization-server', async (request) => {
-    const host = request.headers.host || 'localhost:5420';
+    const host = request.headers.host || `localhost:${request.server.addresses()[0]?.port || 5420}`;
     const base = `http://${host}`;
     return {
       issuer: base,

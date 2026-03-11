@@ -12,7 +12,7 @@ export function McpSettingsCard() {
   const revokeClient = useRevokeMcpClient()
   const [copied, setCopied] = useState<string | null>(null)
 
-  const serverUrl = `${window.location.protocol}//${window.location.hostname}:5420/mcp`
+  const serverUrl = `${window.location.protocol}//${window.location.host}/mcp`
 
   const claudeDesktopConfig = JSON.stringify({
     mcpServers: {
