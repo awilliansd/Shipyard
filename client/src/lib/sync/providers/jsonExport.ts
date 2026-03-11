@@ -35,7 +35,7 @@ export const jsonExportProvider: SyncProvider = {
 
     const exportData = {
       exportedAt: new Date().toISOString(),
-      source: 'devdash',
+      source: 'shipyard',
       version: 1,
       projectId: config.projectId,
       taskCount: filtered.length,

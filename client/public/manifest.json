@@ -1,6 +1,6 @@
 {
-  "name": "DevDash",
-  "short_name": "DevDash",
+  "name": "Shipyard",
+  "short_name": "Shipyard",
   "description": "Local development dashboard for managing projects, tasks, git, and terminal launchers",
   "start_url": "/",
   "display": "standalone",

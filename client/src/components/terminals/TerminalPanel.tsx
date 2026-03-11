@@ -26,8 +26,8 @@ interface LocalTab {
   exited: boolean
 }
 
-const PANEL_HEIGHT_KEY = 'devdash:terminal-height'
-const PANEL_VISIBLE_KEY = 'devdash:terminal-visible'
+const PANEL_HEIGHT_KEY = 'shipyard:terminal-height'
+const PANEL_VISIBLE_KEY = 'shipyard:terminal-visible'
 const MIN_HEIGHT = 150
 const MAX_HEIGHT_RATIO = 0.7
 const DEFAULT_HEIGHT = 300
@@ -176,8 +176,8 @@ export function TerminalPanel({ projectId, projectPath, projectName }: TerminalP
         handleNewTab(e.detail.type)
       }
     }
-    window.addEventListener('devdash:open-terminal' as any, handler as any)
-    return () => window.removeEventListener('devdash:open-terminal' as any, handler as any)
+    window.addEventListener('shipyard:open-terminal' as any, handler as any)
+    return () => window.removeEventListener('shipyard:open-terminal' as any, handler as any)
   }, [projectId, handleNewTab])
 
   // Don't render if terminal not available

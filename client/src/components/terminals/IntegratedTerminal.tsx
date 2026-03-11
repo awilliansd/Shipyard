@@ -11,7 +11,7 @@ interface IntegratedTerminalProps {
   onExit?: (code: number) => void
 }
 
-// Theme matching DevDash dark theme (shadcn/ui)
+// Theme matching Shipyard dark theme (shadcn/ui)
 const TERMINAL_THEME = {
   background: '#0a0a0f',
   foreground: '#e4e4e7',

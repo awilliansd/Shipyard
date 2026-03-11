@@ -2,7 +2,7 @@
 set -e
 
 echo ""
-echo "  DevDash - Setup"
+echo "  Shipyard - Setup"
 echo "  ────────────────"
 echo ""
 
@@ -44,13 +44,13 @@ mkdir -p data/tasks
 echo ""
 echo "  [ok] Setup complete!"
 echo ""
-echo "  Run DevDash:"
+echo "  Run Shipyard:"
 echo "    pnpm dev          Start dev server (http://localhost:5421)"
-echo "    ./devdash.sh      Start + open browser (Linux/macOS)"
+echo "    ./shipyard.sh      Start + open browser (Linux/macOS)"
 echo ""
 
 # Offer to create shell alias
-read -p "  Create 'devdash' shell alias? [y/N] " -n 1 -r
+read -p "  Create 'shipyard' shell alias? [y/N] " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
   SHELL_RC=""
@@ -61,15 +61,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   fi
 
   if [ -n "$SHELL_RC" ]; then
-    DEVDASH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SHIPYARD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     echo "" >> "$SHELL_RC"
-    echo "# DevDash" >> "$SHELL_RC"
-    echo "alias devdash='cd \"$DEVDASH_DIR\" && ./devdash.sh'" >> "$SHELL_RC"
+    echo "# Shipyard" >> "$SHELL_RC"
+    echo "alias shipyard='cd \"$SHIPYARD_DIR\" && ./shipyard.sh'" >> "$SHELL_RC"
     echo "  [ok] Alias added to $SHELL_RC"
-    echo "  Run 'source $SHELL_RC' or open a new terminal, then type 'devdash'"
+    echo "  Run 'source $SHELL_RC' or open a new terminal, then type 'shipyard'"
   else
     echo "  [!] Could not find .bashrc or .zshrc. Add the alias manually:"
-    echo "      alias devdash='cd \"$(pwd)\" && ./devdash.sh'"
+    echo "      alias shipyard='cd \"$(pwd)\" && ./shipyard.sh'"
   fi
 fi
 
@@ -79,18 +79,18 @@ if command -v xdg-open &>/dev/null && [ -d "$HOME/.local/share/applications" ]; 
   read -p "  Create desktop shortcut (Linux)? [y/N] " -n 1 -r
   echo ""
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    DEVDASH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    cat > "$HOME/.local/share/applications/devdash.desktop" << DESKTOP
+    SHIPYARD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    cat > "$HOME/.local/share/applications/shipyard.desktop" << DESKTOP
 [Desktop Entry]
-Name=DevDash
+Name=Shipyard
 Comment=Local Development Dashboard
-Exec=bash -c 'cd "$DEVDASH_DIR" && ./devdash.sh'
-Icon=$DEVDASH_DIR/client/public/favicon.svg
+Exec=bash -c 'cd "$SHIPYARD_DIR" && ./shipyard.sh'
+Icon=$SHIPYARD_DIR/client/public/favicon.svg
 Terminal=true
 Type=Application
 Categories=Development;
 DESKTOP
-    echo "  [ok] Desktop shortcut created. Search 'DevDash' in your app launcher."
+    echo "  [ok] Desktop shortcut created. Search 'Shipyard' in your app launcher."
   fi
 fi
 

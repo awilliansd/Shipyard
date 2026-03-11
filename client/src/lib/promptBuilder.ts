@@ -194,9 +194,9 @@ export function buildTaskPrompt(
   lines.push('2. Plan and implement the solution')
   lines.push('3. Test that your changes work correctly')
 
-  // DevDash task update instructions
+  // Shipyard task update instructions
   if (tasksFilePath) {
-    lines.push(`4. After completing the task, update the DevDash tasks file to mark this task as done:`)
+    lines.push(`4. After completing the task, update the Shipyard tasks file to mark this task as done:`)
     lines.push(`   - File: ${tasksFilePath}`)
     lines.push(`   - Find the task with id "${task.id}" and set:`)
     lines.push(`     - "status": "done"`)

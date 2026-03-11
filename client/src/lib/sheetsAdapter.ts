@@ -135,7 +135,7 @@ export function mergeTasks(localTasks: Task[], sheetRows: SheetRow[]): {
           sheetChanged = true
         } else {
           // Same timestamp (or both missing) but content differs
-          // → sheet was edited manually (DevDash always updates updatedAt on mutations)
+          // → sheet was edited manually (Shipyard always updates updatedAt on mutations)
           merged.push(sheet)
           localChanged = true
         }

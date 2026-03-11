@@ -15,10 +15,10 @@ import { loadSettings } from './services/settingsStore.js';
 import { isAvailable as isTerminalAvailable } from './services/terminalService.js';
 
 // Read config from env (set by Electron) or use defaults
-const PORT = parseInt(process.env.DEVDASH_PORT || '5420', 10);
-const HOST = process.env.DEVDASH_HOST || '0.0.0.0';
-const STATIC_DIR = process.env.DEVDASH_STATIC_DIR || '';
-const IS_ELECTRON = !!process.env.DEVDASH_ELECTRON;
+const PORT = parseInt(process.env.SHIPYARD_PORT || '5420', 10);
+const HOST = process.env.SHIPYARD_HOST || '0.0.0.0';
+const STATIC_DIR = process.env.SHIPYARD_STATIC_DIR || '';
+const IS_ELECTRON = !!process.env.SHIPYARD_ELECTRON;
 
 const app = Fastify({ logger: !IS_ELECTRON });
 
@@ -59,7 +59,7 @@ await initProjectDiscovery();
 
 try {
   await app.listen({ port: PORT, host: HOST });
-  console.log(`DevDash server running on http://${HOST}:${PORT}`);
+  console.log(`Shipyard server running on http://${HOST}:${PORT}`);
   console.log(`Terminal integration: ${isTerminalAvailable() ? 'available' : 'disabled (node-pty not found)'}`);
   if (IS_ELECTRON) console.log('Mode: Electron embedded');
   if (STATIC_DIR) console.log(`Serving static files from: ${STATIC_DIR}`);

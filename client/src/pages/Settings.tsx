@@ -51,7 +51,7 @@ export function Settings() {
 
     const data: Record<string, any> = {
       exportedAt: new Date().toISOString(),
-      source: 'devdash',
+      source: 'shipyard',
       version: 1,
     }
 
@@ -69,7 +69,7 @@ export function Settings() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `devdash-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `shipyard-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
 
@@ -413,7 +413,7 @@ export function Settings() {
               <div className="space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Import</p>
                 <p className="text-xs text-muted-foreground">
-                  Upload a DevDash backup file. Settings and tasks will be merged with existing data.
+                  Upload a Shipyard backup file. Settings and tasks will be merged with existing data.
                 </p>
                 <Button
                   onClick={handleImport}

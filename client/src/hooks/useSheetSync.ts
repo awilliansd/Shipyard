@@ -15,7 +15,7 @@ export interface SyncConfig {
   lastSyncError: string | null
 }
 
-const SYNC_KEY = (projectId: string) => `devdash:sync:${projectId}`
+const SYNC_KEY = (projectId: string) => `shipyard:sync:${projectId}`
 
 function readConfig(projectId: string): SyncConfig | null {
   try {

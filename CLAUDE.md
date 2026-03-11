@@ -1,4 +1,4 @@
-# DevDash - Local Development Dashboard
+# Shipyard - Local Development Dashboard
 
 Dashboard web local (localhost) para centralizar gerenciamento de projetos, tarefas, git, terminais integrados e launchers. Complementa o VS Code, nao substitui.
 
@@ -6,13 +6,13 @@ Dashboard web local (localhost) para centralizar gerenciamento de projetos, tare
 
 ```bash
 pnpm dev          # Inicia client (5421) + server (5420)
-./devdash.sh      # Linux: inicia server + abre browser
-devdash           # Alias bash (se configurado em ~/.bashrc)
-devdash.cmd       # Windows: batch file na raiz do projeto
+./shipyard.sh      # Linux: inicia server + abre browser
+shipyard           # Alias bash (se configurado em ~/.bashrc)
+shipyard.cmd       # Windows: batch file na raiz do projeto
 ```
 
-No Ubuntu, pesquisar "DevDash" no Activities/App Grid abre um gnome-terminal com o servidor + browser.
-Atalho desktop: `~/.local/share/applications/devdash.desktop`
+No Ubuntu, pesquisar "Shipyard" no Activities/App Grid abre um gnome-terminal com o servidor + browser.
+Atalho desktop: `~/.local/share/applications/shipyard.desktop`
 
 ### Requisitos (Ubuntu/Linux)
 - Node.js >= 18 (recomendado via nvm)
@@ -35,7 +35,7 @@ Atalho desktop: `~/.local/share/applications/devdash.desktop`
 ## Estrutura do Projeto
 
 ```
-vibedash/
+shipyard/
 ├── client/                        # Frontend (porta 5421)
 │   ├── src/
 │   │   ├── App.tsx                # Rotas: /, /tasks, /project/:id, /settings
@@ -130,6 +130,17 @@ vibedash/
 │   └── tasks/                     # Um JSON por projeto
 │       └── {projectId}.json       # { tasks: Task[] }
 │
+├── electron/                      # Electron desktop wrapper
+│   ├── main.ts                    # Main process: server spawn, window, tray
+│   ├── preload.ts                 # Preload script (contextBridge)
+│   └── tsconfig.json              # TS config para Electron (CJS output)
+│
+├── assets/                        # Icones do app
+│   ├── icon.png                   # 512x512 PNG (Linux, tray)
+│   ├── icon.ico                   # Multi-size ICO (Windows)
+│   └── icon.icns                  # Multi-size ICNS (macOS)
+│
+├── electron-builder.yml           # Config de build do instalador
 ├── setup.sh                       # Linux/macOS: setup + optional alias/desktop shortcut
 ├── setup.cmd                      # Windows: setup
 ├── devdash.cmd                    # Windows: inicia server + abre browser
@@ -137,7 +148,7 @@ vibedash/
 ├── README.md                      # Documentacao publica
 ├── LICENSE                        # MIT
 ├── pnpm-workspace.yaml            # packages: [client, server]
-└── package.json                   # Root: concurrently para pnpm dev
+└── package.json                   # Root: scripts, Electron deps, pnpm config
 ```
 
 ## Modelos de Dados
@@ -240,7 +251,7 @@ interface Settings {
 
 ### Google Sheets Sync
 - Sincroniza tarefas com Google Sheets via Google Apps Script (sem API do Google)
-- **Config armazenado APENAS no localStorage** (`devdash:sync:{projectId}`) — nada salvo no servidor
+- **Config armazenado APENAS no localStorage** (`shipyard:sync:{projectId}`) — nada salvo no servidor
 - Backend e um **proxy stateless**: recebe URL no body, faz fetch ao Apps Script, retorna resultado
 - Validacao de URL: so permite `https://script.google.com/macros/s/...` (previne SSRF)
 - **Auto-push**: cada mutation de task dispara push com merge (debounce 2s)
@@ -251,7 +262,7 @@ interface Settings {
 - **Test connection**: testa ping ao Apps Script antes de salvar
 - UI no header do TaskBoard: badge "Sheets" (verde) quando configurado, botoes Pull/Push, Settings
 - Popover de setup com guia passo-a-passo + template Apps Script copiavel
-- Portabilidade: qualquer pessoa instala DevDash, cola a mesma URL, faz Pull e tem as tasks
+- Portabilidade: qualquer pessoa instala Shipyard, cola a mesma URL, faz Pull e tem as tasks
 - Arquivos: `SheetSyncPanel.tsx`, `useSheetSync.ts`, `sheetsAdapter.ts`, `server/routes/sync.ts`
 - Colunas sincronizadas: id, title, description, priority, status, prompt, updatedAt
 - Protecao anti-loop: `lastPushAt` guard impede pull nos 10s apos um push
@@ -259,7 +270,7 @@ interface Settings {
 ### Sync Provider System (extensivel)
 - Arquitetura de **provider pattern** para sync de tarefas com servicos externos
 - Cada provider implementa interface `SyncProvider` (push, pull, merge, export, notify)
-- Config em localStorage por projeto+provider (`devdash:sync:{projectId}:{providerId}`)
+- Config em localStorage por projeto+provider (`shipyard:sync:{projectId}:{providerId}`)
 - Backward compat: migra config legado do Google Sheets automaticamente
 - `autoSync.ts`: scheduler debounced que dispara sync para todos providers habilitados
 - **Providers disponiveis (Fase 1):**
@@ -283,11 +294,26 @@ interface Settings {
 - Botoes do Quick Launch abrem no terminal integrado (se disponivel) ou nativo (fallback)
 - Botao "Open Native Terminal" aparece quando integrado esta disponivel
 - Sessoes sobrevivem navegacao entre abas (PTY no server, reconecta via WebSocket)
-- Altura do painel persistida em localStorage (`devdash:terminal-height`)
+- Altura do painel persistida em localStorage (`shipyard:terminal-height`)
 - Shell default: `powershell.exe` (Windows), `$SHELL` ou `/bin/bash` (Linux/macOS)
-- Tema do terminal combina com dark theme do DevDash
+- Tema do terminal combina com dark theme do Shipyard
 - Fontes: Cascadia Code, Fira Code, JetBrains Mono, Consolas (fallback)
 - Arquivos: `IntegratedTerminal.tsx`, `TerminalPanel.tsx`, `useTerminal.ts`, `terminalService.ts`, `terminalWs.ts`
+
+### Electron Desktop App (distribuicao)
+- Wrapper Electron para distribuir como app nativo instalavel
+- `electron/main.ts`: processo principal, spawn do server como child process, BrowserWindow, Tray
+- Server roda como child process (preserva ESM, env vars SHIPYARD_*)
+- **Data path configuravel**: `SHIPYARD_DATA_DIR` env var (AppData em prod, ./data em dev)
+- Centralizado em `server/src/services/dataDir.ts` — todos os services importam de la
+- **Static file serving**: `@fastify/static` serve client/dist em producao
+- **SPA fallback**: rotas nao-API retornam index.html
+- **Tray icon**: minimiza para bandeja, double-click reabre, menu contextual
+- **Single instance**: so permite uma instancia do app rodando
+- **electron-builder**: NSIS (Win .exe), DMG (Mac), AppImage+deb (Linux)
+- Scripts: `pnpm dist`, `dist:win`, `dist:mac`, `dist:linux`
+- Dev mode Electron: `pnpm dev:electron` (Vite HMR + Electron window)
+- Arquivos: `electron/main.ts`, `electron/preload.ts`, `electron-builder.yml`
 
 ### Onboarding (first-run)
 - WelcomeWizard exibido na primeira visita (se nao ha projetos adicionados)
@@ -295,7 +321,7 @@ interface Settings {
 - Permite scan/add projetos direto no wizard
 - Explica sobre dados locais, export/import, sync
 - Skip disponivel em qualquer passo
-- Controlado via localStorage (`devdash:onboarding-complete`)
+- Controlado via localStorage (`shipyard:onboarding-complete`)
 - Arquivo: `components/onboarding/WelcomeWizard.tsx`
 
 ### Git Status Indicators
@@ -372,7 +398,7 @@ O `terminalLauncher.ts` detecta o OS via `os.platform()` e usa comandos nativos:
 | Abrir terminal | `gnome-terminal --title --working-directory` | `osascript` (Terminal.app) | `wt.exe --title` + `cmd.exe /k` |
 | Abrir pasta | `xdg-open` | `open` | `explorer.exe` |
 
-- Titulos dos terminais seguem o padrao `[projectName] Type` (ex: `[canoe claudio] Claude`, `[devdash] Dev`)
+- Titulos dos terminais seguem o padrao `[projectName] Type` (ex: `[canoe claudio] Claude`, `[shipyard] Dev`)
 - Nomes de projeto maiores que 18 chars sao truncados: `[canoe-clau...] Shell`
 - No Linux, comandos executados no terminal usam `bash -c "cmd; exec bash"` para manter a aba aberta
 - No macOS, usa osascript com `printf '\e]0;Title\a'` para definir titulo
@@ -403,7 +429,9 @@ O `terminalLauncher.ts` detecta o OS via `os.platform()` e usa comandos nativos:
 
 **Frontend**: react, react-dom, vite, @vitejs/plugin-react-swc, tailwindcss, @tanstack/react-query, react-router-dom, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, lucide-react, sonner, date-fns, cmdk, @xterm/xterm, @xterm/addon-fit, @xterm/addon-web-links
 
-**Backend**: fastify, @fastify/cors, @fastify/websocket, simple-git, tsx, nanoid, node-pty (optional)
+**Backend**: fastify, @fastify/cors, @fastify/static, @fastify/websocket, simple-git, tsx, nanoid, node-pty (optional)
+
+**Desktop**: electron, electron-builder, cross-env (devDependencies na raiz)
 
 **Um modulo nativo opcional**: `node-pty` (optionalDependencies) para terminal integrado. Se nao instalar, tudo funciona exceto terminal no browser.
 

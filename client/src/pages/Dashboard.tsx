@@ -62,7 +62,7 @@ export function Dashboard() {
 
   return (
     <>
-      <Header title="DevDash" />
+      <Header title="Shipyard" />
       <div className="flex-1 overflow-y-auto scrollbar-dark">
         {/* Working On banner */}
         {workingOn.length > 0 && (

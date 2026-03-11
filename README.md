@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="client/public/favicon.svg" width="64" height="64" alt="DevDash" />
+  <img src="client/public/favicon.svg" width="64" height="64" alt="Shipyard" />
 </p>
 
-<h1 align="center">DevDash</h1>
+<h1 align="center">Shipyard</h1>
 
 <p align="center">
   Local development dashboard for managing projects, tasks, git, and terminals.<br/>
@@ -39,8 +39,8 @@
 ### Install
 
 ```bash
-git clone https://github.com/your-username/devdash.git
-cd devdash
+git clone https://github.com/your-username/shipyard.git
+cd shipyard
 ```
 
 **Automated setup** (installs dependencies + optional shortcuts):
@@ -64,20 +64,20 @@ Open [http://localhost:5421](http://localhost:5421) — a setup wizard will guid
 | OS | Command | What it does |
 |----|---------|-------------|
 | Any | `pnpm dev` | Starts client (5421) + server (5420) |
-| Linux / macOS | `./devdash.sh` | Starts server + opens browser |
-| Windows | `devdash.cmd` | Starts server + opens browser |
-| Linux | Search "DevDash" in app launcher | If desktop shortcut was created during setup |
+| Linux / macOS | `./shipyard.sh` | Starts server + opens browser |
+| Windows | `shipyard.cmd` | Starts server + opens browser |
+| Linux | Search "Shipyard" in app launcher | If desktop shortcut was created during setup |
 
 **Create a shell alias** (Linux/macOS):
 
 ```bash
 # Add to ~/.bashrc or ~/.zshrc:
-alias devdash='cd /path/to/devdash && ./devdash.sh'
+alias shipyard='cd /path/to/shipyard && ./shipyard.sh'
 ```
 
 ## First Run
 
-On first access, DevDash shows a setup wizard that walks you through:
+On first access, Shipyard shows a setup wizard that walks you through:
 
 1. **Adding projects** — scan a folder to discover projects, or add individual folders
 2. **Understanding data storage** — all data is local JSON files, with export/import options
@@ -115,7 +115,7 @@ Every action button has a tooltip explaining what it does. Hover to learn more. 
 | **Import JSON** | Loads tasks from a JSON file |
 | **Export CSV** | Downloads tasks as spreadsheet (for sharing with clients) |
 | **Import CSV** | Imports CSV with a diff review dialog to merge changes safely |
-| **Sheets** | Connect to a Google Sheet — push/pull tasks between DevDash and the spreadsheet |
+| **Sheets** | Connect to a Google Sheet — push/pull tasks between Shipyard and the spreadsheet |
 | **Copy as prompt** (on task) | Copies a single task as an AI-ready prompt |
 
 ## Data & Sync
@@ -123,7 +123,7 @@ Every action button has a tooltip explaining what it does. Hover to learn more. 
 ### Where data lives
 
 ```
-devdash/data/
+shipyard/data/
 ├── settings.json              # Your selected project paths
 ├── projects.json              # Cached project metadata
 └── tasks/
@@ -137,18 +137,18 @@ All data is local. No database, no cloud services.
 **Option 1: Export/Import** (simplest)
 - Export tasks as JSON from each project
 - Copy the JSON files to the new machine
-- Import them in DevDash on the new machine
+- Import them in Shipyard on the new machine
 
 **Option 2: Sync the data folder** (automatic)
 - Move `data/` to a synced location (Dropbox, Google Drive, OneDrive, iCloud)
-- Create a symlink from `devdash/data` to the synced folder:
+- Create a symlink from `shipyard/data` to the synced folder:
 
 ```bash
 # Linux / macOS
-ln -s ~/Dropbox/devdash-data ./data
+ln -s ~/Dropbox/shipyard-data ./data
 
 # Windows (run as admin)
-mklink /D data "C:\Users\you\Dropbox\devdash-data"
+mklink /D data "C:\Users\you\Dropbox\shipyard-data"
 ```
 
 **Option 3: Private Git repo** (versioned)
@@ -159,7 +159,7 @@ mklink /D data "C:\Users\you\Dropbox\devdash-data"
 ```bash
 cd data
 git init
-git remote add origin https://github.com/you/devdash-data.git
+git remote add origin https://github.com/you/shipyard-data.git
 git add -A && git commit -m "sync" && git push
 ```
 
@@ -167,7 +167,7 @@ git add -A && git commit -m "sync" && git push
 
 **Option 4: Google Sheets sync** (per-project, collaborative)
 
-Sync a project's tasks with a Google Sheet — anyone with the sheet URL can pull tasks into their own DevDash.
+Sync a project's tasks with a Google Sheet — anyone with the sheet URL can pull tasks into their own Shipyard.
 
 #### Setup
 
@@ -241,12 +241,12 @@ function onEdit(e) {
 4. Click **Deploy > New deployment > Web App**
 5. Set **Execute as:** Me, **Access:** Anyone
 6. Copy the deployment URL
-7. In DevDash, open a project and click the **Sheets** button in the task board header
+7. In Shipyard, open a project and click the **Sheets** button in the task board header
 8. Paste the URL, click **Test**, then **Save**
 
 #### How it works
 
-- **Auto-sync**: every task change in DevDash auto-pushes to the sheet (2s debounce). Every 30s, DevDash polls the sheet and merges changes.
+- **Auto-sync**: every task change in Shipyard auto-pushes to the sheet (2s debounce). Every 30s, Shipyard polls the sheet and merges changes.
 - **Merge (not overwrite)**: sync uses per-task `updatedAt` timestamps. The newest version of each task wins. New tasks from either side are preserved. No data is lost.
 - **Push** button: manually merges local → sheet
 - **Pull** button: manually replaces local with sheet data
@@ -256,14 +256,14 @@ function onEdit(e) {
 #### Multi-machine workflow
 
 1. Machine A: configure the sheet URL, push tasks
-2. Machine B: install DevDash, add the same project, configure the same sheet URL, pull tasks
+2. Machine B: install Shipyard, add the same project, configure the same sheet URL, pull tasks
 3. Both machines now have the same tasks — push/pull to stay in sync
 
 > The Google Sheet becomes the shared source of truth. Each person configures the URL in their own browser.
 
 ## Terminal Launchers
 
-DevDash opens native terminals on your OS:
+Shipyard opens native terminals on your OS:
 
 | Action | Linux | macOS | Windows |
 |--------|-------|-------|---------|
@@ -285,7 +285,7 @@ On Linux, terminal tabs stay open after the command runs. On Windows, it uses `c
 ## Project Structure
 
 ```
-devdash/
+shipyard/
 ├── client/                  # Frontend (port 5421)
 │   ├── src/
 │   │   ├── components/      # UI components (shadcn/ui based)
@@ -300,8 +300,8 @@ devdash/
 ├── data/                    # Local data (auto-created, gitignored)
 ├── setup.sh                 # Linux/macOS setup script
 ├── setup.cmd                # Windows setup script
-├── devdash.sh               # Linux/macOS launcher
-└── devdash.cmd              # Windows launcher
+├── shipyard.sh               # Linux/macOS launcher
+└── shipyard.cmd              # Windows launcher
 ```
 
 ## Contributing

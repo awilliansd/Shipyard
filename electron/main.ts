@@ -41,11 +41,11 @@ function startServer(): Promise<void> {
   return new Promise((res, reject) => {
     const env = {
       ...process.env,
-      DEVDASH_ELECTRON: '1',
-      DEVDASH_DATA_DIR: DATA_DIR,
-      DEVDASH_STATIC_DIR: CLIENT_DIST,
-      DEVDASH_PORT: String(PORT),
-      DEVDASH_HOST: '127.0.0.1',
+      SHIPYARD_ELECTRON: '1',
+      SHIPYARD_DATA_DIR: DATA_DIR,
+      SHIPYARD_STATIC_DIR: CLIENT_DIST,
+      SHIPYARD_PORT: String(PORT),
+      SHIPYARD_HOST: '127.0.0.1',
     };
 
     if (isDev) {
@@ -132,7 +132,7 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'DevDash',
+    title: 'Shipyard',
     icon: existsSync(ICON_PATH) ? ICON_PATH : undefined,
     backgroundColor: '#09090b',
     show: false,
@@ -185,11 +185,11 @@ function createTray() {
     : nativeImage.createEmpty();
 
   tray = new Tray(icon);
-  tray.setToolTip('DevDash');
+  tray.setToolTip('Shipyard');
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show DevDash',
+      label: 'Show Shipyard',
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
@@ -240,7 +240,7 @@ if (!gotTheLock) {
     } catch (err) {
       console.error('[Electron] Failed to start:', err);
       dialog.showErrorBox(
-        'DevDash - Failed to Start',
+        'Shipyard - Failed to Start',
         `Could not start the server.\n\n${err instanceof Error ? err.message : String(err)}`
       );
       app.quit();

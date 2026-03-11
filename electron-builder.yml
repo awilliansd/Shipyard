@@ -1,5 +1,5 @@
-appId: com.devdash.app
-productName: DevDash
+appId: com.shipyard.dev
+productName: Shipyard
 copyright: Copyright © 2026
 
 directories:
@@ -37,8 +37,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: DevDash
-  uninstallDisplayName: DevDash
+  shortcutName: Shipyard
+  uninstallDisplayName: Shipyard
 
 mac:
   target:
@@ -49,7 +49,7 @@ mac:
   artifactName: "${productName}-${version}-${arch}.${ext}"
 
 dmg:
-  title: DevDash
+  title: Shipyard
   contents:
     - x: 130
       y: 220
@@ -68,10 +68,10 @@ linux:
   category: Development
   artifactName: "${productName}-${version}.${ext}"
   desktop:
-    Name: DevDash
+    Name: Shipyard
     Comment: Local Development Dashboard
     Categories: Development;IDE;
-    StartupWMClass: devdash
+    StartupWMClass: shipyard
 
 appImage:
   license: LICENSE

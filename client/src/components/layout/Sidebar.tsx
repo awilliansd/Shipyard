@@ -286,7 +286,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="p-4 border-b flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
           <LayoutDashboard className="h-5 w-5 text-primary" />
-          DevDash
+          Shipyard
         </Link>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
           <PanelLeftClose className="h-4 w-4 text-muted-foreground" />

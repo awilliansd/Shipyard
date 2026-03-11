@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar'
 import { TabBar } from './TabBar'
 import { TabsProvider } from '@/hooks/useTabs'
 
-const SIDEBAR_KEY = 'devdash-sidebar-collapsed'
+const SIDEBAR_KEY = 'shipyard-sidebar-collapsed'
 
 export function Layout() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true')

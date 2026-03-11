@@ -8,7 +8,7 @@ import type { Task } from '@/hooks/useTasks'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 
-const APPS_SCRIPT_TEMPLATE = `// DevDash Sync — Cole este script no Google Apps Script
+const APPS_SCRIPT_TEMPLATE = `// Shipyard Sync — Cole este script no Google Apps Script
 // Deploy > New deployment > Web App
 // Execute as: Me | Access: Anyone
 

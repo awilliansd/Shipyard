@@ -14,7 +14,7 @@ interface TabsContextType {
   switchTab: (id: string) => void
 }
 
-const STORAGE_KEY = 'devdash-tabs'
+const STORAGE_KEY = 'shipyard-tabs'
 
 function loadTabs(): Tab[] {
   try {

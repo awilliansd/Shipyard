@@ -10,7 +10,7 @@ import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-const ONBOARDING_KEY = 'devdash:onboarding-complete'
+const ONBOARDING_KEY = 'shipyard:onboarding-complete'
 
 interface ScannedProject {
   path: string
@@ -180,7 +180,7 @@ function StepWelcome() {
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold mb-2">Welcome to DevDash</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome to Shipyard</h1>
         <p className="text-muted-foreground max-w-md">
           Your local development dashboard for managing projects, tasks, git, and terminal launchers — all in one place.
         </p>
@@ -240,7 +240,7 @@ function StepAddProjects({
       <div>
         <h2 className="text-xl font-bold mb-1">Add Your Projects</h2>
         <p className="text-sm text-muted-foreground">
-          Point DevDash to your project folders. It will detect git repos and tech stacks automatically.
+          Point Shipyard to your project folders. It will detect git repos and tech stacks automatically.
         </p>
       </div>
 
@@ -359,7 +359,7 @@ function StepDataInfo() {
       </div>
 
       <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground space-y-1">
-        <p><strong>Data location:</strong> <code className="bg-muted px-1 rounded">./data/</code> inside the DevDash folder</p>
+        <p><strong>Data location:</strong> <code className="bg-muted px-1 rounded">./data/</code> inside the Shipyard folder</p>
         <p><strong>Tasks:</strong> <code className="bg-muted px-1 rounded">data/tasks/&lt;project-id&gt;.json</code></p>
         <p><strong>Settings:</strong> <code className="bg-muted px-1 rounded">data/settings.json</code></p>
       </div>

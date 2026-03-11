@@ -26,7 +26,7 @@ function buildClaudeContext(projectName: string, projectPath: string, projectId:
   const lines = [
     `Project: ${projectName}`,
     `Project path: ${projectPath}`,
-    `DevDash tasks file: ${tasksFile}`,
+    `Shipyard tasks file: ${tasksFile}`,
     '',
   ]
 
@@ -58,7 +58,7 @@ function buildClaudeContext(projectName: string, projectPath: string, projectId:
 }
 
 function openIntegratedTerminal(projectId: string, type: string) {
-  window.dispatchEvent(new CustomEvent('devdash:open-terminal', { detail: { projectId, type } }))
+  window.dispatchEvent(new CustomEvent('shipyard:open-terminal', { detail: { projectId, type } }))
 }
 
 export function TerminalLauncher({ projectId, projectPath, projectName }: TerminalLauncherProps) {
@@ -69,7 +69,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const { data: tasks } = useTasks(projectId)
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   const [skipPermissions, setSkipPermissions] = useState(() => {
-    try { return localStorage.getItem('devdash:skipPermissions') === 'true' } catch { return false }
+    try { return localStorage.getItem('shipyard:skipPermissions') === 'true' } catch { return false }
   })
 
   const handleCopyContext = () => {
@@ -142,7 +142,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
               checked={skipPermissions}
               onChange={e => {
               setSkipPermissions(e.target.checked)
-              localStorage.setItem('devdash:skipPermissions', String(e.target.checked))
+              localStorage.setItem('shipyard:skipPermissions', String(e.target.checked))
             }}
               className="rounded border-muted-foreground/30"
             />
