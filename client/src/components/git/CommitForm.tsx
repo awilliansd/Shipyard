@@ -1,15 +1,10 @@
 import { useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useGitCommit, useGitPush } from '@/hooks/useGit'
-import { useLaunchTerminal } from '@/hooks/useProjects'
-import { useTerminalStatus } from '@/hooks/useTerminal'
+import { Textarea } from '@/components/ui/textarea'
+import { useGitCommit, useGitPush, useGenerateCommitMessage } from '@/hooks/useGit'
+import { useClaudeStatus } from '@/hooks/useClaude'
 import { toast } from 'sonner'
-
-function openIntegratedTerminal(projectId: string, type: string) {
-  window.dispatchEvent(new CustomEvent('shipyard:open-terminal', { detail: { projectId, type } }))
-}
 
 interface CommitFormProps {
   projectId: string
@@ -20,24 +15,21 @@ export function CommitForm({ projectId, hasStagedChanges }: CommitFormProps) {
   const [message, setMessage] = useState('')
   const gitCommit = useGitCommit()
   const gitPush = useGitPush()
-  const launchTerminal = useLaunchTerminal()
-  const { data: terminalStatus } = useTerminalStatus()
-  const hasIntegrated = terminalStatus?.available ?? false
+  const generateMsg = useGenerateCommitMessage()
+  const { data: claudeStatus } = useClaudeStatus()
 
-  const handleAICommit = () => {
-    const prompt = 'Review the staged changes with git diff --cached, then commit with a simple and descriptive message. Only commit, do not push.'
-    navigator.clipboard.writeText(prompt)
-    const skipPerm = localStorage.getItem('shipyard:skipPermissions') === 'true'
-    const type = skipPerm ? 'claude-yolo' : 'claude'
-    if (hasIntegrated) {
-      openIntegratedTerminal(projectId, type)
-      toast.success('Claude opened — paste the prompt')
-    } else {
-      launchTerminal.mutate(
-        { projectId, type },
-        { onSuccess: () => toast.success('Claude opened — paste the prompt') }
-      )
-    }
+  const aiAvailable = claudeStatus?.cliAvailable || claudeStatus?.configured
+  const isBusy = gitCommit.isPending || gitPush.isPending
+
+  const handleGenerate = () => {
+    generateMsg.mutate(projectId, {
+      onSuccess: (data) => {
+        setMessage(data.message)
+        const source = data.source === 'cli' ? 'CLI' : 'API'
+        toast.success(`Message generated (${source})`)
+      },
+      onError: (err) => toast.error(err.message),
+    })
   }
 
   const handleCommit = () => {
@@ -74,41 +66,55 @@ export function CommitForm({ projectId, hasStagedChanges }: CommitFormProps) {
   return (
     <div className="space-y-2">
       <div className="flex gap-1">
-        <Input
+        <Textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
           placeholder="Commit message..."
-          className="text-sm"
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleCommit()}
+          className="text-sm min-h-[36px] max-h-[120px] resize-none"
+          rows={1}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              handleCommit()
+            }
+          }}
+          onInput={e => {
+            const el = e.target as HTMLTextAreaElement
+            el.style.height = 'auto'
+            el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+          }}
         />
         <Button
           variant="ghost"
           size="icon"
           className="h-9 w-9 shrink-0"
-          disabled={!hasStagedChanges}
-          onClick={handleAICommit}
-          title="Open Claude to generate commit"
+          disabled={!hasStagedChanges || !aiAvailable || generateMsg.isPending}
+          onClick={handleGenerate}
+          title={aiAvailable ? 'Generate commit message with AI' : 'Install Claude CLI or configure API key'}
         >
-          <Sparkles className="h-4 w-4" />
+          {generateMsg.isPending
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <Sparkles className="h-4 w-4" />
+          }
         </Button>
       </div>
       <div className="flex gap-2">
         <Button
           size="sm"
           className="flex-1 h-8 text-xs"
-          disabled={!message.trim() || !hasStagedChanges || gitCommit.isPending}
+          disabled={!message.trim() || !hasStagedChanges || isBusy}
           onClick={handleCommit}
         >
-          Commit
+          {gitCommit.isPending ? 'Committing...' : 'Commit'}
         </Button>
         <Button
           size="sm"
           variant="outline"
           className="flex-1 h-8 text-xs"
-          disabled={!message.trim() || !hasStagedChanges || gitCommit.isPending}
+          disabled={!message.trim() || !hasStagedChanges || isBusy}
           onClick={handleCommitAndPush}
         >
-          Commit & Push
+          {gitPush.isPending ? 'Pushing...' : 'Commit & Push'}
         </Button>
       </div>
     </div>

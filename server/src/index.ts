@@ -16,6 +16,7 @@ import { fileRoutes } from './routes/files.js';
 import { initProjectDiscovery } from './services/projectDiscovery.js';
 import { loadSettings } from './services/settingsStore.js';
 import { isAvailable as isTerminalAvailable } from './services/terminalService.js';
+import { getCliStatus as isClaudeCliAvailable } from './services/claudeCliService.js';
 
 // Read config from env (set by Electron) or use defaults
 const PORT = parseInt(process.env.SHIPYARD_PORT || '5420', 10);
@@ -97,6 +98,8 @@ try {
   await app.listen({ port: PORT, host: HOST });
   console.log(`Shipyard server running on http://${HOST}:${PORT}`);
   console.log(`Terminal integration: ${isTerminalAvailable() ? 'available' : 'disabled (node-pty not found)'}`);
+  const cliOk = await isClaudeCliAvailable();
+  console.log(`Claude CLI: ${cliOk ? 'available (subscription)' : 'not found'}`);
   console.log(`Claude API: check /api/claude/status`);
   console.log(`MCP Server: endpoint at /mcp (configure in Settings)`);
   if (IS_ELECTRON) console.log('Mode: Electron embedded');

@@ -29,11 +29,6 @@ export async function getDiff(projectPath: string, file?: string, staged = false
   return git.diff(args);
 }
 
-export async function getStagedDiff(projectPath: string): Promise<string> {
-  const git = getGit(projectPath);
-  return git.diff(['--cached']);
-}
-
 export async function stageFile(projectPath: string, file: string): Promise<void> {
   const git = getGit(projectPath);
   await git.add(file);

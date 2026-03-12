@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import * as gitService from '../services/gitService.js';
+import * as claudeCliService from '../services/claudeCliService.js';
+import * as claudeService from '../services/claudeService.js';
 import { getProjects } from '../services/projectDiscovery.js';
 
 async function getProjectPath(projectId: string): Promise<string | null> {
@@ -194,6 +196,57 @@ export async function gitRoutes(app: FastifyInstance) {
         return { success: true };
       } catch (err: any) {
         return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
+  // Generate commit message via Claude CLI (priority) or API (fallback)
+  app.post<{ Params: { projectId: string } }>(
+    '/api/projects/:projectId/git/generate-commit-message',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const diff = await gitService.getDiff(path, undefined, true);
+        if (!diff.trim()) {
+          return reply.status(400).send({ error: 'No staged changes' });
+        }
+
+        const truncatedDiff = diff.slice(0, 50000);
+        const prompt = 'Write a concise git commit message for this diff. Subject line under 72 chars. If multiple changes, add bullet points in body. Output ONLY the message, no quotes, no markdown fences, no explanation.';
+
+        // Priority: CLI → API → error
+        const cliOk = await claudeCliService.getCliStatus();
+        if (cliOk) {
+          const message = await claudeCliService.runPrompt(prompt, {
+            input: truncatedDiff,
+            model: 'sonnet',
+            maxTurns: 1,
+            timeout: 30000,
+            cwd: path,
+          });
+          return { message, source: 'cli' };
+        }
+
+        // Fallback: API
+        const config = await claudeService.loadClaudeConfig();
+        if (config) {
+          const { default: Anthropic } = await import('@anthropic-ai/sdk');
+          const client = new Anthropic({ apiKey: config.apiKey });
+          const response = await client.messages.create({
+            model: config.model,
+            max_tokens: 256,
+            system: prompt,
+            messages: [{ role: 'user', content: truncatedDiff }],
+          });
+          const text = response.content[0].type === 'text' ? response.content[0].text : '';
+          return { message: text.trim(), source: 'api' };
+        }
+
+        return reply.status(503).send({ error: 'No AI available. Install Claude CLI or configure API key.' });
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message || 'Failed to generate commit message' });
       }
     }
   );

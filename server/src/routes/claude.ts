@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import * as claudeService from '../services/claudeService.js';
+import * as claudeCliService from '../services/claudeCliService.js';
 import { buildProjectContext, buildTaskContext } from '../services/claudeContextBuilder.js';
 import * as taskStore from '../services/taskStore.js';
 
@@ -7,8 +8,10 @@ export async function claudeRoutes(app: FastifyInstance) {
   // Get Claude status (never exposes the API key)
   app.get('/api/claude/status', async () => {
     const config = await claudeService.loadClaudeConfig();
+    const cliAvailable = await claudeCliService.getCliStatus();
     return {
       configured: !!config,
+      cliAvailable,
       model: config?.model || null,
       maxTokens: config?.maxTokens || null,
     };

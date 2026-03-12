@@ -61,6 +61,8 @@ export const api = {
     request(`/projects/${projectId}/git/discard`, { method: 'POST', body: JSON.stringify({ file, type }) }),
   discardAll: (projectId: string, section: 'staged' | 'unstaged') =>
     request(`/projects/${projectId}/git/discard-all`, { method: 'POST', body: JSON.stringify({ section }) }),
+  generateCommitMessage: (projectId: string) =>
+    request<{ message: string; source: 'cli' | 'api' }>(`/projects/${projectId}/git/generate-commit-message`, { method: 'POST' }),
 
   // Terminals (native launchers)
   launchTerminal: (projectId: string, type: string) => request('/terminals/launch', { method: 'POST', body: JSON.stringify({ projectId, type }) }),
@@ -92,7 +94,7 @@ export const api = {
   browse: (path: string) => request<{ directories: { name: string; path: string }[] }>('/browse', { method: 'POST', body: JSON.stringify({ path }) }),
 
   // Claude AI
-  getClaudeStatus: () => request<{ configured: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
+  getClaudeStatus: () => request<{ configured: boolean; cliAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
   saveClaudeConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
     request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),
   deleteClaudeConfig: () => request<{ ok: boolean }>('/claude/config', { method: 'DELETE' }),

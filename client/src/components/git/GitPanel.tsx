@@ -36,9 +36,10 @@ export function GitPanel({ projectId }: GitPanelProps) {
   const deleted = status.deleted || []
   const created = status.created || []
 
-  const stagedFiles = [
-    ...staged.map((f: string) => ({ file: f, status: 'M' })),
-  ]
+  // Use status.files for accurate staged status (A/M/D/R instead of always 'M')
+  const stagedFiles = (status.files || [])
+    .filter((f: any) => f.index && f.index !== ' ' && f.index !== '?')
+    .map((f: any) => ({ file: f.path, status: f.index as string }))
 
   const unstagedFiles = [
     ...modified.filter((f: string) => !staged.includes(f)).map((f: string) => ({ file: f, status: 'M' })),
@@ -172,7 +173,7 @@ export function GitPanel({ projectId }: GitPanelProps) {
           </div>
           {stagedOpen && (
             <div className="space-y-1">
-              {stagedFiles.map(({ file, status: s }) => (
+              {stagedFiles.map(({ file, status: s }: { file: string; status: string }) => (
                 <FileChange key={`staged-${file}`} projectId={projectId} file={file} status={s} staged />
               ))}
             </div>

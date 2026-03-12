@@ -104,6 +104,7 @@ export function useGitPush() {
     mutationFn: (projectId: string) => api.gitPush(projectId),
     onSuccess: (_, projectId) => {
       queryClient.invalidateQueries({ queryKey: ['git-status', projectId] })
+      queryClient.invalidateQueries({ queryKey: ['git-log', projectId] })
     },
   })
 }
@@ -127,6 +128,12 @@ export function useDiscardFile() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['git-status', variables.projectId] })
     },
+  })
+}
+
+export function useGenerateCommitMessage() {
+  return useMutation({
+    mutationFn: (projectId: string) => api.generateCommitMessage(projectId),
   })
 }
 
