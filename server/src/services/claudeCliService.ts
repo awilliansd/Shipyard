@@ -1,4 +1,4 @@
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
@@ -37,7 +37,9 @@ export interface RunPromptOptions {
 }
 
 export async function runPrompt(prompt: string, options?: RunPromptOptions): Promise<string> {
-  const args = ['-p', prompt];
+  // Always pipe prompt via stdin to avoid Windows command line length limits (~8KB).
+  // claude -p reads from stdin when no prompt argument is given.
+  const args = ['-p'];
 
   if (options?.model) args.push('--model', options.model);
   if (options?.maxTurns) args.push('--max-turns', String(options.maxTurns));
@@ -48,54 +50,42 @@ export async function runPrompt(prompt: string, options?: RunPromptOptions): Pro
   const env = { ...process.env };
   delete env.ANTHROPIC_API_KEY;
 
-  const execOptions: any = {
-    encoding: 'utf-8' as const,
-    timeout: options?.timeout ?? 30_000,
-    maxBuffer: 1024 * 1024,
-    env,
-    windowsHide: true,
-  };
-  if (options?.cwd) execOptions.cwd = options.cwd;
-
-  // If input is provided, use stdin
-  if (options?.input) {
-    // Use spawn for stdin piping
-    const { spawn } = await import('child_process');
-    return new Promise<string>((resolve, reject) => {
-      const proc = spawn('claude', args, {
-        env,
-        cwd: options.cwd,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        windowsHide: true,
-      });
-
-      let stdout = '';
-      let stderr = '';
-      const timer = setTimeout(() => {
-        proc.kill();
-        reject(new Error('Claude CLI timed out'));
-      }, options?.timeout ?? 30_000);
-
-      proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
-      proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
-      proc.on('close', (code) => {
-        clearTimeout(timer);
-        if (code === 0) {
-          resolve(stdout.trim());
-        } else {
-          reject(new Error(stderr.trim() || `Claude CLI exited with code ${code}`));
-        }
-      });
-      proc.on('error', (err) => {
-        clearTimeout(timer);
-        reject(err);
-      });
-
-      proc.stdin.write(options.input);
-      proc.stdin.end();
+  return new Promise<string>((resolve, reject) => {
+    const proc = spawn('claude', args, {
+      env,
+      cwd: options?.cwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
     });
-  }
 
-  const { stdout } = await execFileAsync('claude', args, execOptions);
-  return String(stdout).trim();
+    let stdout = '';
+    let stderr = '';
+    const timeout = options?.timeout ?? 30_000;
+    const timer = setTimeout(() => {
+      proc.kill();
+      reject(new Error('Claude CLI timed out'));
+    }, timeout);
+
+    proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+    proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve(stdout.trim());
+      } else {
+        reject(new Error(stderr.trim() || `Claude CLI exited with code ${code}`));
+      }
+    });
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    // Pipe prompt (+ optional input) via stdin
+    const stdinContent = options?.input
+      ? `${prompt}\n\n${options.input}`
+      : prompt;
+    proc.stdin.write(stdinContent);
+    proc.stdin.end();
+  });
 }
