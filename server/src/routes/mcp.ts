@@ -39,17 +39,6 @@ function jsonRpcError(id: any, code: number, message: string) {
   return { jsonrpc: '2.0', id, error: { code, message } };
 }
 
-// MCP Server info
-const SERVER_INFO = {
-  name: 'shipyard',
-  version: '1.0.0',
-};
-
-const SERVER_CAPABILITIES = {
-  tools: { listChanged: false },
-  resources: { subscribe: false, listChanged: false },
-};
-
 export async function mcpRoutes(app: FastifyInstance) {
   // Load config on startup
   await loadMcpConfig();
@@ -406,15 +395,19 @@ async function handleJsonRpc(msg: any) {
       if (uri === 'shipyard://projects') {
         const { getProjects } = await import('../services/projectDiscovery.js');
         const projects = await getProjects();
+        // Slim: only essential fields to save tokens
+        const slim = projects.map(p => ({ id: p.id, name: p.name, path: p.path, techStack: p.techStack, gitBranch: p.gitBranch }));
         return jsonRpcResponse(id, {
-          contents: [{ uri, text: JSON.stringify(projects, null, 2), mimeType: 'application/json' }],
+          contents: [{ uri, text: JSON.stringify(slim), mimeType: 'application/json' }],
         });
       }
       if (uri === 'shipyard://tasks/all') {
         const tasks = await import('../services/taskStore.js');
         const all = await tasks.getAllTasks();
+        // Slim: omit description/prompt (use get_task tool for full details)
+        const slim = all.map(t => ({ id: t.id, projectId: t.projectId, title: t.title, status: t.status, priority: t.priority }));
         return jsonRpcResponse(id, {
-          contents: [{ uri, text: JSON.stringify(all, null, 2), mimeType: 'application/json' }],
+          contents: [{ uri, text: JSON.stringify(slim), mimeType: 'application/json' }],
         });
       }
       return jsonRpcError(id, -32602, `Unknown resource: ${uri}`);
@@ -436,10 +429,3 @@ async function handleJsonRpc(msg: any) {
   }
 }
 
-function jsonRpcResponse2(id: any, result: any) {
-  return { jsonrpc: '2.0', id, result };
-}
-
-function jsonRpcError2(id: any, code: number, message: string) {
-  return { jsonrpc: '2.0', id, error: { code, message } };
-}

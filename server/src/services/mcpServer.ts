@@ -3,29 +3,48 @@ import * as taskStore from './taskStore.js';
 import * as gitService from './gitService.js';
 import type { Project, Task } from '../types/index.js';
 
-// MCP Tool handlers - these are called by the MCP route handler
-// Each returns a JSON-RPC compatible result
+// MCP Tool handlers - optimized for minimal token usage
+// Lists return slim summaries; use get_task for full details
 
 export interface McpToolResult {
   content: Array<{ type: 'text'; text: string }>;
   isError?: boolean;
 }
 
+// ── Helpers ───────────────────────────────────────────────
+
+// Compact JSON (no indentation = ~30% fewer tokens)
+const compact = (obj: any) => JSON.stringify(obj);
+
+// Slim task: only fields needed to identify and triage
+function slimTask(t: Task) {
+  return {
+    id: t.id,
+    projectId: t.projectId,
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    order: t.order,
+  };
+}
+
+// Slim project: essentials only
+function slimProject(p: Project) {
+  return {
+    id: p.id,
+    name: p.name,
+    path: p.path,
+    techStack: p.techStack,
+    gitBranch: p.gitBranch,
+    favorite: p.favorite,
+  };
+}
+
 // ── Tool Implementations ────────────────────────────────
 
 export async function listProjects(): Promise<McpToolResult> {
   const projects = await getProjects();
-  const summary = projects.map(p => ({
-    id: p.id,
-    name: p.name,
-    path: p.path,
-    category: p.category,
-    techStack: p.techStack,
-    gitBranch: p.gitBranch,
-    gitDirty: p.gitDirty,
-    favorite: p.favorite,
-  }));
-  return { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] };
+  return { content: [{ type: 'text', text: compact(projects.map(slimProject)) }] };
 }
 
 export async function getProject(projectId: string): Promise<McpToolResult> {
@@ -34,19 +53,22 @@ export async function getProject(projectId: string): Promise<McpToolResult> {
   if (!project) {
     return { content: [{ type: 'text', text: `Project "${projectId}" not found` }], isError: true };
   }
-  return { content: [{ type: 'text', text: JSON.stringify(project, null, 2) }] };
+  // Full project but compact JSON
+  const { id, name, path, category, techStack, gitBranch, gitDirty, gitAhead, gitBehind, gitStaged, gitUnstaged, gitUntracked, lastCommitMessage, favorite, externalLink } = project;
+  return { content: [{ type: 'text', text: compact({ id, name, path, category, techStack, gitBranch, gitDirty, gitAhead, gitBehind, gitStaged, gitUnstaged, gitUntracked, lastCommitMessage, favorite, externalLink }) }] };
 }
 
 export async function listTasks(projectId: string, status?: string): Promise<McpToolResult> {
   const tasks = await taskStore.getTasks(projectId);
   const filtered = status ? tasks.filter(t => t.status === status) : tasks;
-  return { content: [{ type: 'text', text: JSON.stringify(filtered, null, 2) }] };
+  // Slim list — use get_task for description/prompt
+  return { content: [{ type: 'text', text: compact(filtered.map(slimTask)) }] };
 }
 
 export async function getAllTasks(status?: string): Promise<McpToolResult> {
   const tasks = await taskStore.getAllTasks();
   const filtered = status ? tasks.filter(t => t.status === status) : tasks;
-  return { content: [{ type: 'text', text: JSON.stringify(filtered, null, 2) }] };
+  return { content: [{ type: 'text', text: compact(filtered.map(slimTask)) }] };
 }
 
 export async function getTask(projectId: string, taskId: string): Promise<McpToolResult> {
@@ -54,7 +76,9 @@ export async function getTask(projectId: string, taskId: string): Promise<McpToo
   if (!task) {
     return { content: [{ type: 'text', text: `Task "${taskId}" not found` }], isError: true };
   }
-  return { content: [{ type: 'text', text: JSON.stringify(task, null, 2) }] };
+  // Full task details (this is the tool for getting description/prompt)
+  const { id, title, description, priority, status, prompt, createdAt, updatedAt } = task;
+  return { content: [{ type: 'text', text: compact({ id, projectId, title, description, priority, status, prompt, createdAt, updatedAt }) }] };
 }
 
 export async function createTask(projectId: string, data: {
@@ -71,7 +95,8 @@ export async function createTask(projectId: string, data: {
     status: (data.status as Task['status']) || 'todo',
     prompt: data.prompt,
   });
-  return { content: [{ type: 'text', text: JSON.stringify(task, null, 2) }] };
+  // Mutation response: just confirmation
+  return { content: [{ type: 'text', text: compact({ ok: true, id: task.id, title: task.title, status: task.status }) }] };
 }
 
 export async function updateTask(projectId: string, taskId: string, data: {
@@ -92,7 +117,8 @@ export async function updateTask(projectId: string, taskId: string, data: {
   if (!task) {
     return { content: [{ type: 'text', text: `Task "${taskId}" not found` }], isError: true };
   }
-  return { content: [{ type: 'text', text: JSON.stringify(task, null, 2) }] };
+  // Mutation response: just confirmation
+  return { content: [{ type: 'text', text: compact({ ok: true, id: task.id, title: task.title, status: task.status, priority: task.priority }) }] };
 }
 
 export async function deleteTask(projectId: string, taskId: string): Promise<McpToolResult> {
@@ -100,7 +126,7 @@ export async function deleteTask(projectId: string, taskId: string): Promise<Mcp
   if (!ok) {
     return { content: [{ type: 'text', text: `Task "${taskId}" not found` }], isError: true };
   }
-  return { content: [{ type: 'text', text: `Task "${taskId}" deleted successfully` }] };
+  return { content: [{ type: 'text', text: compact({ ok: true, deleted: taskId }) }] };
 }
 
 export async function getGitStatus(projectId: string): Promise<McpToolResult> {
@@ -110,22 +136,43 @@ export async function getGitStatus(projectId: string): Promise<McpToolResult> {
     return { content: [{ type: 'text', text: 'Not a git repository' }], isError: true };
   }
   try {
-    const status = await gitService.getStatus(project.path);
-    return { content: [{ type: 'text', text: JSON.stringify(status, null, 2) }] };
+    const s = await gitService.getStatus(project.path);
+    // Compact summary instead of full StatusResult
+    const summary = {
+      branch: s.current,
+      tracking: s.tracking || null,
+      ahead: s.ahead,
+      behind: s.behind,
+      staged: s.staged.length > 0 ? s.staged : undefined,
+      modified: s.modified.length > 0 ? s.modified : undefined,
+      not_added: s.not_added.length > 0 ? s.not_added : undefined,
+      created: s.created.length > 0 ? s.created : undefined,
+      deleted: s.deleted.length > 0 ? s.deleted : undefined,
+      conflicted: s.conflicted.length > 0 ? s.conflicted : undefined,
+      isClean: s.isClean(),
+    };
+    return { content: [{ type: 'text', text: compact(summary) }] };
   } catch (err: any) {
     return { content: [{ type: 'text', text: err.message }], isError: true };
   }
 }
 
-export async function getGitLog(projectId: string): Promise<McpToolResult> {
+export async function getGitLog(projectId: string, limit?: number): Promise<McpToolResult> {
   const projects = await getProjects();
   const project = projects.find(p => p.id === projectId);
   if (!project || !project.isGitRepo) {
     return { content: [{ type: 'text', text: 'Not a git repository' }], isError: true };
   }
   try {
-    const log = await gitService.getLog(project.path);
-    return { content: [{ type: 'text', text: JSON.stringify(log, null, 2) }] };
+    const log = await gitService.getLog(project.path, limit || 10);
+    // Compact: only hash(7), message, date, author
+    const commits = log.all.map(c => ({
+      hash: c.hash.slice(0, 7),
+      message: c.message,
+      date: c.date,
+      author: c.author_name,
+    }));
+    return { content: [{ type: 'text', text: compact(commits) }] };
   } catch (err: any) {
     return { content: [{ type: 'text', text: err.message }], isError: true };
   }
@@ -139,7 +186,8 @@ export async function searchTasks(query: string): Promise<McpToolResult> {
     t.description.toLowerCase().includes(q) ||
     (t.prompt && t.prompt.toLowerCase().includes(q))
   );
-  return { content: [{ type: 'text', text: JSON.stringify(matched, null, 2) }] };
+  // Return slim matches — use get_task for full details
+  return { content: [{ type: 'text', text: compact(matched.map(slimTask)) }] };
 }
 
 // ── Tool Registry (for MCP protocol) ────────────────────
@@ -147,12 +195,12 @@ export async function searchTasks(query: string): Promise<McpToolResult> {
 export const MCP_TOOLS = [
   {
     name: 'list_projects',
-    description: 'List all projects in Shipyard with git info and tech stack',
+    description: 'List all projects (slim: id, name, path, techStack, gitBranch, favorite)',
     inputSchema: { type: 'object' as const, properties: {}, required: [] as string[] },
   },
   {
     name: 'get_project',
-    description: 'Get detailed info about a specific project',
+    description: 'Get full details of a project including git counters',
     inputSchema: {
       type: 'object' as const,
       properties: { projectId: { type: 'string', description: 'The project ID' } },
@@ -161,19 +209,19 @@ export const MCP_TOOLS = [
   },
   {
     name: 'list_tasks',
-    description: 'List tasks for a specific project, optionally filtered by status',
+    description: 'List tasks for a project (slim: id, title, status, priority). Use get_task for description/prompt.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         projectId: { type: 'string', description: 'The project ID' },
-        status: { type: 'string', description: 'Filter by status: backlog, todo, in_progress, done', enum: ['backlog', 'todo', 'in_progress', 'done'] },
+        status: { type: 'string', description: 'Filter by status', enum: ['backlog', 'todo', 'in_progress', 'done'] },
       },
       required: ['projectId'],
     },
   },
   {
     name: 'get_all_tasks',
-    description: 'List all tasks across all projects, optionally filtered by status',
+    description: 'List all tasks across all projects (slim: id, projectId, title, status, priority). Use get_task for full details.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -184,7 +232,7 @@ export const MCP_TOOLS = [
   },
   {
     name: 'get_task',
-    description: 'Get full details of a specific task',
+    description: 'Get full task details including description and prompt (technical notes)',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -202,17 +250,17 @@ export const MCP_TOOLS = [
       properties: {
         projectId: { type: 'string', description: 'The project ID' },
         title: { type: 'string', description: 'Task title' },
-        description: { type: 'string', description: 'User-facing description of what needs to be done' },
-        priority: { type: 'string', description: 'Priority level', enum: ['urgent', 'high', 'medium', 'low'] },
-        status: { type: 'string', description: 'Initial status', enum: ['backlog', 'todo', 'in_progress', 'done'] },
-        prompt: { type: 'string', description: 'Technical details, implementation notes, relevant files' },
+        description: { type: 'string', description: 'What needs to be done' },
+        priority: { type: 'string', enum: ['urgent', 'high', 'medium', 'low'] },
+        status: { type: 'string', enum: ['backlog', 'todo', 'in_progress', 'done'] },
+        prompt: { type: 'string', description: 'Technical details and implementation notes' },
       },
       required: ['projectId', 'title'],
     },
   },
   {
     name: 'update_task',
-    description: 'Update an existing task',
+    description: 'Update a task (status, title, description, priority, prompt)',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -241,7 +289,7 @@ export const MCP_TOOLS = [
   },
   {
     name: 'get_git_status',
-    description: 'Get git status for a project (read-only)',
+    description: 'Get compact git status: branch, ahead/behind, changed files',
     inputSchema: {
       type: 'object' as const,
       properties: { projectId: { type: 'string', description: 'The project ID' } },
@@ -250,16 +298,19 @@ export const MCP_TOOLS = [
   },
   {
     name: 'get_git_log',
-    description: 'Get recent git commits for a project (read-only)',
+    description: 'Get recent commits (default 10, compact: hash, message, date, author)',
     inputSchema: {
       type: 'object' as const,
-      properties: { projectId: { type: 'string', description: 'The project ID' } },
+      properties: {
+        projectId: { type: 'string', description: 'The project ID' },
+        limit: { type: 'number', description: 'Max commits to return (default 10)' },
+      },
       required: ['projectId'],
     },
   },
   {
     name: 'search_tasks',
-    description: 'Search tasks across all projects by keyword',
+    description: 'Search tasks by keyword (returns slim results, use get_task for details)',
     inputSchema: {
       type: 'object' as const,
       properties: { query: { type: 'string', description: 'Search query' } },
@@ -291,7 +342,7 @@ export async function handleToolCall(name: string, args: Record<string, any>): P
     case 'get_git_status':
       return getGitStatus(args.projectId);
     case 'get_git_log':
-      return getGitLog(args.projectId);
+      return getGitLog(args.projectId, args.limit);
     case 'search_tasks':
       return searchTasks(args.query);
     default:
