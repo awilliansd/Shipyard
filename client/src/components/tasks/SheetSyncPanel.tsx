@@ -68,7 +68,22 @@ function doPost(e) {
     // Write all data in-place (overwrites header + data without adding rows)
     sheet.getRange(1, 1, allRows.length, HEADERS.length).setValues(allRows);
 
-    if (HEADERS.length > 0) sheet.autoResizeColumns(1, HEADERS.length);
+    // Format: wrap text on long columns, auto-resize short ones
+    if (allRows.length > 1) {
+      var descCol = HEADERS.indexOf('description') + 1;
+      var promptCol = HEADERS.indexOf('prompt') + 1;
+      var dataRange = sheet.getRange(2, 1, allRows.length - 1, HEADERS.length);
+      dataRange.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+      for (var c = 1; c <= HEADERS.length; c++) {
+        if (c === descCol || c === promptCol) {
+          sheet.setColumnWidth(c, 350);
+        } else {
+          sheet.autoResizeColumn(c);
+        }
+      }
+      // Bold header row
+      sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+    }
     return jsonResp({ success: true, updated: tasks.length });
   } catch (err) {
     return jsonResp({ error: err.message });
