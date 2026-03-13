@@ -48,7 +48,8 @@ shipyard/
 │   │   │   ├── layout/
 │   │   │   │   ├── Sidebar.tsx    # Nav: All Projects, All Tasks, counters, favorites, active, git indicators
 │   │   │   │   ├── Header.tsx     # Titulo + acoes do projeto (Claude, Dev, Shell, VS Code, Folder)
-│   │   │   │   └── Layout.tsx     # Sidebar + Outlet wrapper
+│   │   │   │   ├── Layout.tsx     # Sidebar + Outlet wrapper
+│   │   │   │   └── CommandPalette.tsx  # Ctrl+K command palette (cmdk): search projects, tasks, quick actions
 │   │   │   ├── onboarding/
 │   │   │   │   └── WelcomeWizard.tsx  # First-run setup wizard (4 steps)
 │   │   │   ├── projects/
@@ -460,6 +461,18 @@ interface McpConfig {
 - Sidebar (collapsed) tooltips incluem git info
 - Backend: `projectDiscovery.ts` detecta `gitAhead`, `gitBehind`, `gitStaged`, `gitUnstaged`, `gitUntracked`
 - Todos os botoes de acao tem tooltips explicativos
+
+### Command Palette (Ctrl+K)
+- Atalho global **Ctrl+K / Cmd+K** abre command palette (cmdk)
+- **Busca projetos**: pesquisa por nome, categoria, tech stack — abre como aba
+- **Busca tarefas**: pesquisa por titulo, prioridade, status, projeto — navega ao projeto
+- **Quick actions**: Dashboard, All Tasks, Settings, Help
+- Exibe tarefas ativas (nao-done) com icone de prioridade e nome do projeto
+- Exibe projetos com branch git atual
+- Footer com atalhos de teclado (setas, Enter, Esc)
+- Backdrop com blur, fecha ao clicar fora ou pressionar Esc
+- Maximo 20 tarefas exibidas para performance
+- Arquivo: `components/layout/CommandPalette.tsx`
 
 ### Sistema de Abas (multi-projeto)
 - Abrir varios projetos simultaneamente em abas

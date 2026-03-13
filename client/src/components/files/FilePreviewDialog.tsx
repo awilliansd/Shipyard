@@ -141,7 +141,7 @@ export function FilePreviewDialog({ projectId, filePath, onClose }: FilePreviewD
   return (
     <Dialog open={!!filePath} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="max-w-5xl w-[90vw] h-[80vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-4 py-3 border-b shrink-0">
+        <DialogHeader className="px-4 pr-12 py-3 border-b shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <FileIcon name={fileName} extension={ext} type="file" />
