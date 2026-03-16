@@ -69,15 +69,24 @@ export function MilestoneSelector({ projectId, milestoneId, onMilestoneChange }:
   // Only show the selector if there are custom milestones
   if (!hasCustomMilestones) {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-muted-foreground" onClick={handleNew}>
-            <Plus className="h-3 w-3" />
-            Milestone
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Create a milestone to organize tasks into phases</TooltipContent>
-      </Tooltip>
+      <>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-muted-foreground" onClick={handleNew}>
+              <Plus className="h-3 w-3" />
+              Milestone
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Create a milestone to organize tasks into phases</TooltipContent>
+        </Tooltip>
+        <MilestoneDialog
+          projectId={projectId}
+          milestone={editingMilestone}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onCreated={(id) => onMilestoneChange(id)}
+        />
+      </>
     )
   }
 
