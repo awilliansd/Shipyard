@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
-import { Sheet, Download, Upload, Settings2, Loader2, CheckCircle2, XCircle, Unplug, ChevronDown, ChevronUp, Copy, Check, Paintbrush } from 'lucide-react'
+import { Sheet, Download, Upload, Loader2, CheckCircle2, XCircle, Unplug, Copy, Check, Paintbrush } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useSyncConfig, useSyncPush, useSyncPull, useSyncTest, useSyncSetup, type SyncConfig } from '@/hooks/useSheetSync'
+import { useSyncConfig, useSyncPush, useSyncPull, useSyncTest, useSyncSetup } from '@/hooks/useSheetSync'
 import type { Task } from '@/hooks/useTasks'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
@@ -294,70 +294,31 @@ export function SheetSyncPanel({ projectId, tasks }: SheetSyncPanelProps) {
     )
   }
 
-  // Configured — show sync controls
+  // Configured — show status badge + settings popover
   return (
     <div className="flex items-center gap-1">
-      {/* Status badge */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 cursor-default">
-            <Sheet className="h-3 w-3" />
-            Sheets
-            {config.lastSyncStatus === 'error' && <XCircle className="h-3 w-3 text-red-400" />}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          {config.lastSyncStatus === 'error'
-            ? `Sync error: ${config.lastSyncError}`
-            : lastSyncLabel
-              ? `Last synced ${lastSyncLabel}`
-              : 'Connected to Google Sheet'
-          }
-          {config.autoSync && ' (auto-sync on)'}
-        </TooltipContent>
-      </Tooltip>
-
-      {/* Pull */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handlePull} disabled={isWorking}>
-            {pull.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Pull tasks from Google Sheet (overwrites local)</TooltipContent>
-      </Tooltip>
-
-      {/* Push */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handlePush} disabled={isWorking}>
-            {push.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Push local tasks to Google Sheet (overwrites sheet)</TooltipContent>
-      </Tooltip>
-
-      {/* Format Dashboard */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handleSetup} disabled={isWorking}>
-            {setup.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paintbrush className="h-3.5 w-3.5" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Create/refresh formatted Dashboard sheet (safe to re-run)</TooltipContent>
-      </Tooltip>
-
-      {/* Settings */}
+      {/* Status badge + settings in single popover */}
       <Popover open={popoverOpen} onOpenChange={(open) => { setPopoverOpen(open); if (open) handleOpenPopover() }}>
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <Settings2 className="h-3.5 w-3.5" />
-              </Button>
+              <button className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors cursor-pointer">
+                <Sheet className="h-3 w-3" />
+                Sheets
+                {config.lastSyncStatus === 'error' && <XCircle className="h-3 w-3 text-red-400" />}
+                {isWorking && <Loader2 className="h-3 w-3 animate-spin" />}
+              </button>
             </PopoverTrigger>
           </TooltipTrigger>
-          <TooltipContent>Sheet sync settings</TooltipContent>
+          <TooltipContent>
+            {config.lastSyncStatus === 'error'
+              ? `Sync error: ${config.lastSyncError}`
+              : lastSyncLabel
+                ? `Last synced ${lastSyncLabel}`
+                : 'Connected to Google Sheet'
+            }
+            {config.autoSync && ' (auto-sync on)'}
+          </TooltipContent>
         </Tooltip>
         <PopoverContent className="w-96" align="end">
           <SetupContent
@@ -374,7 +335,14 @@ export function SheetSyncPanel({ projectId, tasks }: SheetSyncPanelProps) {
             onTest={handleTest}
             onSave={handleSave}
             onDisconnect={handleDisconnect}
+            onPull={handlePull}
+            onPush={handlePush}
+            onSetup={handleSetup}
             isTesting={test.isPending}
+            isWorking={isWorking}
+            isPulling={pull.isPending}
+            isPushing={push.isPending}
+            isSettingUp={setup.isPending}
             isConfigured
             lastSyncLabel={lastSyncLabel}
           />
@@ -400,7 +368,14 @@ interface SetupContentProps {
   onTest: () => void
   onSave: () => void
   onDisconnect?: () => void
+  onPull?: () => void
+  onPush?: () => void
+  onSetup?: () => void
   isTesting: boolean
+  isWorking?: boolean
+  isPulling?: boolean
+  isPushing?: boolean
+  isSettingUp?: boolean
   isConfigured?: boolean
   lastSyncLabel?: string | null
 }
@@ -409,7 +384,8 @@ function SetupContent({
   urlInput, setUrlInput, autoSync, setAutoSync,
   syncPrompt, setSyncPrompt,
   showScript, setShowScript, copied, onCopyScript,
-  onTest, onSave, onDisconnect, isTesting,
+  onTest, onSave, onDisconnect, onPull, onPush, onSetup,
+  isTesting, isWorking, isPulling, isPushing, isSettingUp,
   isConfigured, lastSyncLabel,
 }: SetupContentProps) {
   return (
@@ -512,6 +488,27 @@ function SetupContent({
           <CheckCircle2 className="h-3 w-3 text-emerald-500" />
           Last synced {lastSyncLabel}
         </p>
+      )}
+
+      {/* Sync actions (when configured) */}
+      {isConfigured && onPull && onPush && onSetup && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium">Sync Actions</label>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-7 text-xs flex-1 gap-1.5" onClick={onPull} disabled={isWorking}>
+              {isPulling ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+              Pull
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs flex-1 gap-1.5" onClick={onPush} disabled={isWorking}>
+              {isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+              Push
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs flex-1 gap-1.5" onClick={onSetup} disabled={isWorking}>
+              {isSettingUp ? <Loader2 className="h-3 w-3 animate-spin" /> : <Paintbrush className="h-3 w-3" />}
+              Format
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Actions */}
