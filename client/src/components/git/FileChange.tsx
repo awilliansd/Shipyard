@@ -6,14 +6,25 @@ import { useStageFile, useUnstageFile, useGitDiff, useDiscardFile } from '@/hook
 import { FileIcon } from '@/components/files/FileIcon'
 import { FilePreviewDialog } from '@/components/files/FilePreviewDialog'
 
+const PREVIEW_ONLY_EXTENSIONS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.bmp', '.tiff', '.avif',
+  '.pdf', '.zip', '.tar', '.gz', '.7z', '.rar',
+  '.exe', '.dll', '.so', '.dylib',
+  '.woff', '.woff2', '.ttf', '.eot', '.otf',
+  '.mp3', '.mp4', '.wav', '.avi', '.mov', '.flv', '.webm', '.ogg',
+  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  '.pyc', '.class', '.o', '.obj', '.bin', '.dat',
+])
+
 interface FileChangeProps {
   projectId: string
   file: string
   status: string
   staged: boolean
+  onOpenInEditor?: (path: string, name: string, extension: string) => void
 }
 
-export function FileChange({ projectId, file, status, staged }: FileChangeProps) {
+export function FileChange({ projectId, file, status, staged, onOpenInEditor }: FileChangeProps) {
   const [showDiff, setShowDiff] = useState(false)
   const [previewPath, setPreviewPath] = useState<string | null>(null)
   const stageFile = useStageFile()
@@ -31,25 +42,35 @@ export function FileChange({ projectId, file, status, staged }: FileChangeProps)
   const statusLabel = status === '?' ? 'U' : status
   const fileName = file.split(/[/\\]/).pop() || file
   const ext = fileName.lastIndexOf('.') > 0 ? fileName.slice(fileName.lastIndexOf('.')) : ''
+  const isPreviewOnly = PREVIEW_ONLY_EXTENSIONS.has(ext.toLowerCase())
+
+  const handleFileClick = () => {
+    if (status === 'D') return
+    if (isPreviewOnly || !onOpenInEditor) {
+      setPreviewPath(file)
+    } else {
+      onOpenInEditor(file, fileName, ext)
+    }
+  }
 
   return (
     <div className="border rounded-md overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors">
-        <button onClick={() => setShowDiff(!showDiff)} className="shrink-0">
+        <button onClick={() => setShowDiff(!showDiff)} className="shrink-0" title="Toggle diff">
           {showDiff ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
         <FileIcon name={fileName} extension={ext} type="file" className="h-3.5 w-3.5 shrink-0" />
         <button
           className="text-xs flex-1 truncate font-mono text-left hover:text-primary transition-colors"
-          onClick={() => status !== 'D' && setPreviewPath(file)}
-          title={status === 'D' ? 'File deleted' : 'Click to preview'}
+          onClick={handleFileClick}
+          title={status === 'D' ? 'File deleted' : isPreviewOnly ? 'Click to preview' : 'Click to open in editor'}
         >
           {file}
         </button>
         <span className={cn('text-xs font-bold shrink-0', statusColors[status] || 'text-muted-foreground')}>
           {statusLabel}
         </span>
-        {status !== 'D' && (
+        {status !== 'D' && isPreviewOnly && (
           <Button
             variant="ghost"
             size="icon"

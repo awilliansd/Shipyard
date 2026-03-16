@@ -170,7 +170,7 @@ export function Workspace() {
           <TerminalLauncher projectId={project.id} projectPath={project.path} projectName={project.name} />
           <FileExplorer projectId={project.id} projectPath={project.path} onOpenInEditor={handleOpenInEditor} />
           {project.isGitRepo && (
-            <GitPanel projectId={project.id} />
+            <GitPanel projectId={project.id} onOpenInEditor={handleOpenInEditor} />
           )}
         </div>
       </div>

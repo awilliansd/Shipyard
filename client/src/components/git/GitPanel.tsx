@@ -11,9 +11,10 @@ import { cn } from '@/lib/utils'
 
 interface GitPanelProps {
   projectId: string
+  onOpenInEditor?: (path: string, name: string, extension: string) => void
 }
 
-export function GitPanel({ projectId }: GitPanelProps) {
+export function GitPanel({ projectId, onOpenInEditor }: GitPanelProps) {
   const { data: status, isLoading, refetch } = useGitStatus(projectId)
   const { data: logData } = useGitLog(projectId)
   const { data: mainCommitData } = useGitMainCommit(projectId, status?.current)
@@ -176,7 +177,7 @@ export function GitPanel({ projectId }: GitPanelProps) {
           {stagedOpen && (
             <div className="space-y-1">
               {stagedFiles.map(({ file, status: s }: { file: string; status: string }) => (
-                <FileChange key={`staged-${file}`} projectId={projectId} file={file} status={s} staged />
+                <FileChange key={`staged-${file}`} projectId={projectId} file={file} status={s} staged onOpenInEditor={onOpenInEditor} />
               ))}
             </div>
           )}
@@ -223,7 +224,7 @@ export function GitPanel({ projectId }: GitPanelProps) {
           {unstagedOpen && (
             <div className="space-y-1">
               {unstagedFiles.map(({ file, status: s }) => (
-                <FileChange key={`unstaged-${file}`} projectId={projectId} file={file} status={s} staged={false} />
+                <FileChange key={`unstaged-${file}`} projectId={projectId} file={file} status={s} staged={false} onOpenInEditor={onOpenInEditor} />
               ))}
             </div>
           )}
