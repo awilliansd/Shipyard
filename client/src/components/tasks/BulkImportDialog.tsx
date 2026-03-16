@@ -8,6 +8,7 @@ import { useCreateTask } from '@/hooks/useTasks'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { playAiCompleteSound } from '@/lib/sounds'
 
 interface ParsedTask {
   title: string
@@ -42,6 +43,7 @@ export function BulkImportDialog({ projectId, open, onOpenChange }: BulkImportDi
         return
       }
       setTasks(result.tasks.map(t => ({ ...t, selected: true })))
+      playAiCompleteSound()
       setState('preview')
     } catch (err: any) {
       toast.error(err.message || 'Analysis failed')

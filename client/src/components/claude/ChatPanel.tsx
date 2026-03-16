@@ -5,6 +5,7 @@ import { useClaudeStatus, streamChat, type ChatMessage } from '@/hooks/useClaude
 import { ClaudeConfigDialog } from './ClaudeConfigDialog'
 import { Bot, Send, Settings, Loader2, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { playAiCompleteSound } from '@/lib/sounds'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
@@ -58,7 +59,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
           return updated
         })
       },
-      () => setIsStreaming(false),
+      () => { setIsStreaming(false); playAiCompleteSound() },
       (error) => {
         setMessages(prev => {
           const updated = [...prev]

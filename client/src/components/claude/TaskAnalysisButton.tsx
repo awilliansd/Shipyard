@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useClaudeStatus, useAnalyzeTask } from '@/hooks/useClaude'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { playAiCompleteSound } from '@/lib/sounds'
 
 interface TaskAnalysisButtonProps {
   projectId: string
@@ -24,6 +25,7 @@ export function TaskAnalysisButton({ projectId, taskId, title, onResult }: TaskA
     try {
       const result = await analyze.mutateAsync({ projectId, title, taskId })
       onResult(result)
+      playAiCompleteSound()
       toast.success('AI analysis complete')
     } catch (err: any) {
       toast.error(err.message || 'Analysis failed')

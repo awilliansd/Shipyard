@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
+import { playAiCompleteSound } from '@/lib/sounds'
 
 interface TaskViewerProps {
   task: Task | null
@@ -91,6 +92,7 @@ export function TaskViewer({ task, projectName, projectPath, open, onOpenChange,
         description: result.description,
         prompt: result.prompt,
       })
+      playAiCompleteSound()
       toast.success('Task improved with AI')
     } catch (err: any) {
       toast.error(err.message || 'AI analysis failed')

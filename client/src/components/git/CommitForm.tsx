@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useGitCommit, useGitPush, useGenerateCommitMessage } from '@/hooks/useGit'
 import { useClaudeStatus } from '@/hooks/useClaude'
 import { toast } from 'sonner'
+import { playAiCompleteSound } from '@/lib/sounds'
 
 interface CommitFormProps {
   projectId: string
@@ -25,6 +26,7 @@ export function CommitForm({ projectId, hasStagedChanges }: CommitFormProps) {
     generateMsg.mutate(projectId, {
       onSuccess: (data) => {
         setMessage(data.message)
+        playAiCompleteSound()
         const source = data.source === 'cli' ? 'CLI' : 'API'
         toast.success(`Message generated (${source})`)
       },

@@ -8,6 +8,7 @@ import { useCreateTask, useUpdateTask, type Task } from '@/hooks/useTasks'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { playAiCompleteSound } from '@/lib/sounds'
 
 interface TaskAction {
   type: 'create' | 'update' | 'skip'
@@ -82,6 +83,7 @@ export function TaskManagerDialog({ projectId, tasks, open, onOpenChange }: Task
       }
       setActions(result.actions.map(a => ({ ...a, type: a.type as TaskAction['type'], selected: a.type !== 'skip' })))
       setSummary(result.summary)
+      playAiCompleteSound()
       setState('preview')
     } catch (err: any) {
       toast.error(err.message || 'Analysis failed')
