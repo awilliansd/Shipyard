@@ -22,6 +22,7 @@ interface GlobalTab {
   exited: boolean
   hasNotification: boolean
   taskId?: string
+  taskNumber?: number
 }
 
 const PANEL_HEIGHT_KEY = 'shipyard:terminal-height'
@@ -195,7 +196,7 @@ export function TerminalPanel() {
   }, [panelHeight])
 
   // Create a new terminal tab for a given project (or active project)
-  const handleNewTab = useCallback(async (type = 'shell', forProjectId?: string, taskId?: string, prompt?: string) => {
+  const handleNewTab = useCallback(async (type = 'shell', forProjectId?: string, taskId?: string, prompt?: string, taskNumber?: number) => {
     if (!status?.available) {
       toast.error('Integrated terminal not available')
       return
@@ -225,6 +226,7 @@ export function TerminalPanel() {
         exited: false,
         hasNotification: false,
         taskId,
+        taskNumber,
       }
       setTabs(prev => [...prev, tab])
       setActiveTabId(session.id)
@@ -382,8 +384,8 @@ export function TerminalPanel() {
 
   // Listen for shipyard:open-terminal events (from TerminalLauncher) for ANY project
   useEffect(() => {
-    const handler = (e: CustomEvent<{ projectId: string; type: string; taskId?: string; prompt?: string }>) => {
-      handleNewTab(e.detail.type, e.detail.projectId, e.detail.taskId, e.detail.prompt)
+    const handler = (e: CustomEvent<{ projectId: string; type: string; taskId?: string; taskNumber?: number; prompt?: string }>) => {
+      handleNewTab(e.detail.type, e.detail.projectId, e.detail.taskId, e.detail.prompt, e.detail.taskNumber)
     }
     window.addEventListener('shipyard:open-terminal' as any, handler as any)
     return () => window.removeEventListener('shipyard:open-terminal' as any, handler as any)
@@ -457,7 +459,7 @@ export function TerminalPanel() {
                 )}
                 <span className="truncate">{tab.title.replace(/^\[(.*?)\]\s*/, '$1 · ')}</span>
                 {tab.taskId && (
-                  <span className="text-[9px] font-mono opacity-60 shrink-0">{tab.taskId}</span>
+                  <span className="text-[9px] font-mono opacity-60 shrink-0">#{tab.taskNumber || '?'}</span>
                 )}
                 <X
                   className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"

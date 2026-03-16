@@ -314,7 +314,7 @@ export function TaskBoard({ projectId, projectName, projectPath }: TaskBoardProp
     try {
       const { prompt } = await api.getAiResolvePrompt(projectId, task.id)
       window.dispatchEvent(new CustomEvent('shipyard:open-terminal', {
-        detail: { projectId, type: 'ai-resolve', taskId: task.id, prompt }
+        detail: { projectId, type: 'ai-resolve', taskId: task.id, taskNumber: task.number, prompt }
       }))
       toast.success('AI resolution started')
     } catch (err: any) {
