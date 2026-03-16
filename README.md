@@ -85,7 +85,7 @@ Or run from source:
 
 ```bash
 git clone https://github.com/defremont/Shipyard.git
-cd vibedash
+cd Shipyard
 pnpm install
 pnpm dev
 ```
@@ -113,7 +113,7 @@ The setup scripts install dependencies and optionally create launch shortcuts:
 
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
-alias shipyard='cd /path/to/vibedash && ./devdash.sh'
+alias shipyard='cd /path/to/Shipyard && ./devdash.sh'
 ```
 
 ### Integrated Terminal (optional)
