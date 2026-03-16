@@ -4,6 +4,7 @@ import { join } from 'path';
 import { MCP_TOOLS, handleToolCall } from '../services/mcpServer.js';
 import * as mcpAuth from '../services/mcpAuth.js';
 import { DATA_DIR } from '../services/dataDir.js';
+import * as log from '../services/logService.js';
 
 const MCP_CONFIG_FILE = join(DATA_DIR, 'mcp-config.json');
 
@@ -108,6 +109,7 @@ export async function mcpRoutes(app: FastifyInstance) {
     }
 
     const client = await mcpAuth.registerClient(client_name, redirect_uris);
+    log.info('mcp', `Client registered: ${client_name}`, client.clientId);
     return {
       client_id: client.clientId,
       client_secret: client.clientSecret,
@@ -283,6 +285,7 @@ export async function mcpRoutes(app: FastifyInstance) {
     if (mcpConfig.requireAuth) {
       const auth = await mcpAuth.validateBearerToken(request.headers.authorization);
       if (!auth.valid) {
+        log.warn('mcp', 'Invalid bearer token rejected');
         reply.status(401).send({ error: 'invalid_token' });
         return false;
       }
@@ -373,8 +376,10 @@ async function handleJsonRpc(msg: any) {
       }
       try {
         const result = await handleToolCall(name, args || {});
+        log.info('mcp', `Tool call: ${name}`, args ? JSON.stringify(args).substring(0, 200) : undefined);
         return jsonRpcResponse(id, result);
       } catch (err: any) {
+        log.error('mcp', `Tool call failed: ${name}`, err.message);
         return jsonRpcResponse(id, {
           content: [{ type: 'text', text: `Error: ${err.message}` }],
           isError: true,

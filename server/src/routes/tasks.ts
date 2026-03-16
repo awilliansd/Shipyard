@@ -3,6 +3,7 @@ import * as taskStore from '../services/taskStore.js';
 import { getProjects } from '../services/projectDiscovery.js';
 import { buildAiResolvePrompt } from '../services/aiResolvePrompt.js';
 import { buildAiManagePrompt } from '../services/aiManagePrompt.js';
+import * as log from '../services/logService.js';
 
 export async function taskRoutes(app: FastifyInstance) {
   // All tasks across all projects
@@ -66,15 +67,21 @@ export async function taskRoutes(app: FastifyInstance) {
   app.post<{ Params: { projectId: string }; Body: { title: string; description?: string; priority?: string; status?: string; prompt?: string; milestoneId?: string } }>(
     '/api/projects/:projectId/tasks',
     async (request) => {
-      const task = await taskStore.createTask(request.params.projectId, {
-        title: request.body.title,
-        description: request.body.description || '',
-        priority: (request.body.priority as any) || 'medium',
-        status: (request.body.status as any) || 'todo',
-        prompt: request.body.prompt,
-        milestoneId: request.body.milestoneId,
-      });
-      return task;
+      try {
+        const task = await taskStore.createTask(request.params.projectId, {
+          title: request.body.title,
+          description: request.body.description || '',
+          priority: (request.body.priority as any) || 'medium',
+          status: (request.body.status as any) || 'todo',
+          prompt: request.body.prompt,
+          milestoneId: request.body.milestoneId,
+        });
+        log.info('tasks', `Task created: ${task.title}`, undefined, request.params.projectId);
+        return task;
+      } catch (err: any) {
+        log.error('tasks', 'Failed to create task', err.message, request.params.projectId);
+        throw err;
+      }
     }
   );
 
@@ -83,6 +90,9 @@ export async function taskRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const task = await taskStore.updateTask(request.params.projectId, request.params.taskId, request.body as any);
       if (!task) return reply.status(404).send({ error: 'Task not found' });
+      if (request.body.status) {
+        log.info('tasks', `Task "${task.title}" → ${request.body.status}`, undefined, request.params.projectId);
+      }
       return task;
     }
   );
@@ -92,6 +102,7 @@ export async function taskRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const deleted = await taskStore.deleteTask(request.params.projectId, request.params.taskId);
       if (!deleted) return reply.status(404).send({ error: 'Task not found' });
+      log.info('tasks', `Task deleted: ${request.params.taskId}`, undefined, request.params.projectId);
       return { success: true };
     }
   );
@@ -100,8 +111,14 @@ export async function taskRoutes(app: FastifyInstance) {
   app.post<{ Params: { projectId: string }; Body: { tasks: any[] } }>(
     '/api/projects/:projectId/tasks/import',
     async (request) => {
-      const count = await taskStore.importTasks(request.params.projectId, request.body.tasks);
-      return { imported: count };
+      try {
+        const count = await taskStore.importTasks(request.params.projectId, request.body.tasks);
+        log.info('tasks', `Imported ${count} tasks`, undefined, request.params.projectId);
+        return { imported: count };
+      } catch (err: any) {
+        log.error('tasks', 'Task import failed', err.message, request.params.projectId);
+        throw err;
+      }
     }
   );
 
@@ -131,8 +148,15 @@ export async function taskRoutes(app: FastifyInstance) {
   }>(
     '/api/projects/:projectId/tasks/csv-apply',
     async (request) => {
-      const result = await taskStore.applyCsvChanges(request.params.projectId, request.body);
-      return result;
+      try {
+        const result = await taskStore.applyCsvChanges(request.params.projectId, request.body);
+        const { update, create, remove } = request.body;
+        log.info('tasks', `CSV apply: ${update?.length || 0} updated, ${create?.length || 0} created, ${remove?.length || 0} removed`, undefined, request.params.projectId);
+        return result;
+      } catch (err: any) {
+        log.error('tasks', 'CSV apply failed', err.message, request.params.projectId);
+        throw err;
+      }
     }
   );
 

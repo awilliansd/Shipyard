@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { getProjects, refreshProjects, updateProject, scanDirectory, addProjects, removeProject } from '../services/projectDiscovery.js';
+import * as log from '../services/logService.js';
 
 export async function projectRoutes(app: FastifyInstance) {
   app.get('/api/projects', async () => {
@@ -28,8 +29,14 @@ export async function projectRoutes(app: FastifyInstance) {
   app.post<{ Body: { directory: string } }>(
     '/api/projects/scan',
     async (request) => {
-      const results = await scanDirectory(request.body.directory);
-      return { projects: results };
+      try {
+        const results = await scanDirectory(request.body.directory);
+        log.info('server', `Scanned directory: found ${results.length} projects`, request.body.directory);
+        return { projects: results };
+      } catch (err: any) {
+        log.error('server', 'Directory scan failed', `${request.body.directory}: ${err.message}`);
+        throw err;
+      }
     }
   );
 
@@ -37,8 +44,14 @@ export async function projectRoutes(app: FastifyInstance) {
   app.post<{ Body: { paths: string[] } }>(
     '/api/projects/add',
     async (request) => {
-      const projects = await addProjects(request.body.paths);
-      return { projects };
+      try {
+        const projects = await addProjects(request.body.paths);
+        log.info('server', `Added ${request.body.paths.length} project(s)`, request.body.paths.join(', '));
+        return { projects };
+      } catch (err: any) {
+        log.error('server', 'Failed to add projects', err.message);
+        throw err;
+      }
     }
   );
 
@@ -46,6 +59,7 @@ export async function projectRoutes(app: FastifyInstance) {
   app.post<{ Body: { path: string } }>(
     '/api/projects/remove',
     async (request) => {
+      log.info('server', 'Project removed', request.body.path);
       const projects = await removeProject(request.body.path);
       return { projects };
     }

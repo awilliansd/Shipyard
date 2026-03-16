@@ -3,6 +3,7 @@ import { readdir, stat, readFile, writeFile, unlink, rm } from 'fs/promises';
 import { join, resolve, extname, relative, sep } from 'path';
 import { getProjects } from '../services/projectDiscovery.js';
 import { openFolder } from '../services/terminalLauncher.js';
+import * as log from '../services/logService.js';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -63,6 +64,7 @@ function validatePath(projectPath: string, relPath: string): string {
   const resolved = resolve(join(projectPath, relPath));
   const projectRoot = resolve(projectPath);
   if (!resolved.startsWith(projectRoot + sep) && resolved !== projectRoot) {
+    log.warn('files', 'Path traversal attempt blocked', `${relPath} → ${resolved}`);
     throw { statusCode: 403, message: 'Path traversal detected' };
   }
   return resolved;
@@ -221,11 +223,14 @@ export async function fileRoutes(app: FastifyInstance) {
         const st = await stat(targetPath);
         if (st.isDirectory()) {
           await rm(targetPath, { recursive: true });
+          log.info('files', `Directory deleted: ${relPath}`, undefined, request.params.projectId);
         } else {
           await unlink(targetPath);
+          log.info('files', `File deleted: ${relPath}`, undefined, request.params.projectId);
         }
         return { success: true };
       } catch (err: any) {
+        log.error('files', `Failed to delete: ${relPath}`, err.message, request.params.projectId);
         return reply.status(500).send({ error: err.message });
       }
     }
@@ -268,6 +273,7 @@ export async function fileRoutes(app: FastifyInstance) {
         return { success: true, size: newStat.size };
       } catch (err: any) {
         if (err.code === 'ENOENT') return reply.status(404).send({ error: 'File not found' });
+        log.error('files', `Failed to save: ${relPath}`, err.message, request.params.projectId);
         return reply.status(500).send({ error: err.message });
       }
     }
