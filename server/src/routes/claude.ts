@@ -45,7 +45,55 @@ function parseJsonResponse(text: string): any {
     }
   }
 
-  throw new Error('Could not parse JSON from AI response');
+  // 5. Try fixing common JSON issues (trailing commas, single quotes)
+  const jsonCandidate = extractBracketedContent(trimmed);
+  if (jsonCandidate) {
+    const fixed = jsonCandidate
+      .replace(/,\s*([}\]])/g, '$1')       // trailing commas
+      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // unquoted keys
+    try { return JSON.parse(fixed); } catch {}
+  }
+
+  const snippet = trimmed.length > 200 ? trimmed.substring(0, 200) + '...' : trimmed;
+  throw new Error(`Could not parse JSON from AI response. Response starts with: ${snippet}`);
+}
+
+/** Extract the outermost { ... } or [ ... ] from text using bracket depth counting */
+function extractBracketedContent(text: string): string | null {
+  let start = -1;
+  let openChar = '';
+  let closeChar = '';
+  let depth = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (start === -1) {
+      if (ch === '{' || ch === '[') {
+        start = i;
+        openChar = ch;
+        closeChar = ch === '{' ? '}' : ']';
+        depth = 1;
+      }
+      continue;
+    }
+    // Skip characters inside strings
+    if (ch === '"') {
+      i++;
+      while (i < text.length && text[i] !== '"') {
+        if (text[i] === '\\') i++; // skip escaped chars
+        i++;
+      }
+      continue;
+    }
+    if (ch === openChar) depth++;
+    else if (ch === closeChar) {
+      depth--;
+      if (depth === 0) {
+        return text.substring(start, i + 1);
+      }
+    }
+  }
+  return null;
 }
 
 export async function claudeRoutes(app: FastifyInstance) {
@@ -233,8 +281,14 @@ export async function claudeRoutes(app: FastifyInstance) {
           `${systemInstructions}\n\n${userMessage}`,
           { model: 'sonnet', maxTurns: 1, timeout: 60000, cwd },
         );
-        const parsed = parseJsonResponse(result);
-        return { title: parsed.title || title, description: parsed.description || '', prompt: parsed.prompt || '' };
+        try {
+          const parsed = parseJsonResponse(result);
+          return { title: parsed.title || title, description: parsed.description || '', prompt: parsed.prompt || '' };
+        } catch {
+          // Graceful fallback: use raw response as description if JSON parsing fails
+          console.warn('[analyze-task] CLI response was not valid JSON, using raw text as description');
+          return { title, description: result.trim(), prompt: '' };
+        }
       } catch (err: any) {
         console.error('[analyze-task] CLI failed:', err.message);
         return reply.status(500).send({ error: `AI analysis failed: ${err.message}` });

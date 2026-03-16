@@ -159,14 +159,65 @@ function parseJsonFromAiResponse(text: string): any {
     try { return JSON.parse(fenceMatch[1].trim()); } catch {}
   }
 
-  // Find first { and match to last }
-  const start = trimmed.indexOf('{');
-  const end = trimmed.lastIndexOf('}');
-  if (start !== -1 && end > start) {
-    try { return JSON.parse(trimmed.substring(start, end + 1)); } catch {}
+  // Find first { or [ and match to last } or ] (greedy extraction)
+  for (let i = 0; i < trimmed.length; i++) {
+    if (trimmed[i] === '{' || trimmed[i] === '[') {
+      const closingChar = trimmed[i] === '{' ? '}' : ']';
+      const lastClose = trimmed.lastIndexOf(closingChar);
+      if (lastClose > i) {
+        try { return JSON.parse(trimmed.substring(i, lastClose + 1)); } catch {}
+      }
+    }
   }
 
-  throw new Error('Could not parse JSON from AI response');
+  // Try bracket-depth extraction + fix common issues (trailing commas, unquoted keys)
+  const jsonCandidate = extractBracketedJson(trimmed);
+  if (jsonCandidate) {
+    const fixed = jsonCandidate
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+    try { return JSON.parse(fixed); } catch {}
+  }
+
+  const snippet = trimmed.length > 200 ? trimmed.substring(0, 200) + '...' : trimmed;
+  throw new Error(`Could not parse JSON from AI response. Response starts with: ${snippet}`);
+}
+
+/** Extract the outermost { ... } or [ ... ] using bracket depth counting */
+function extractBracketedJson(text: string): string | null {
+  let start = -1;
+  let openChar = '';
+  let closeChar = '';
+  let depth = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (start === -1) {
+      if (ch === '{' || ch === '[') {
+        start = i;
+        openChar = ch;
+        closeChar = ch === '{' ? '}' : ']';
+        depth = 1;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      i++;
+      while (i < text.length && text[i] !== '"') {
+        if (text[i] === '\\') i++;
+        i++;
+      }
+      continue;
+    }
+    if (ch === openChar) depth++;
+    else if (ch === closeChar) {
+      depth--;
+      if (depth === 0) {
+        return text.substring(start, i + 1);
+      }
+    }
+  }
+  return null;
 }
 
 export async function manageTasks(
@@ -185,23 +236,12 @@ export async function manageTasks(
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
   try {
-    const parsed = JSON.parse(text);
+    const parsed = parseJsonFromAiResponse(text);
     return {
       actions: Array.isArray(parsed.actions) ? parsed.actions : [],
       summary: parsed.summary || '',
     };
   } catch {
-    // Try to extract JSON from response
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      try {
-        const parsed = JSON.parse(match[0]);
-        return {
-          actions: Array.isArray(parsed.actions) ? parsed.actions : [],
-          summary: parsed.summary || '',
-        };
-      } catch {}
-    }
     return { actions: [], summary: 'Failed to parse AI response' };
   }
 }
@@ -234,7 +274,7 @@ Respond ONLY with valid JSON array, no markdown fences. Example:
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '[]';
   try {
-    const parsed = JSON.parse(text);
+    const parsed = parseJsonFromAiResponse(text);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
