@@ -28,7 +28,7 @@ export function useAllTasks() {
       const data = await api.getAllTasks()
       return data.tasks as Task[]
     },
-    refetchInterval: 15000,
+    refetchInterval: 5000,
   })
 }
 
@@ -41,6 +41,7 @@ export function useTasks(projectId: string | undefined) {
       return data.tasks as Task[]
     },
     enabled: !!projectId,
+    refetchInterval: 5000,
   })
 }
 
