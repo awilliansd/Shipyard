@@ -4,7 +4,7 @@
   "description": "Local development dashboard for managing projects, tasks, git, and terminals",
   "author": {
     "name": "Shipyard Contributors",
-    "email": "andre.def93@gmail.com"
+    "email": "adcoderio@gmail.com"
   },
   "main": "electron/dist/main.js",
   "scripts": {

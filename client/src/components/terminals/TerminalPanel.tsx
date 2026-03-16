@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Plus, X, ChevronDown, ChevronUp, Terminal, Trash2, ExternalLink, Sparkles } from 'lucide-react'
+import { Plus, X, ChevronDown, ChevronUp, Terminal, Trash2, ExternalLink, Sparkles, XCircle } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   useTerminalStatus,
@@ -287,6 +287,17 @@ export function TerminalPanel() {
     setIsVisible(false)
   }, [killSession, aiSessions])
 
+  const handleClearExited = useCallback(() => {
+    setTabs(prev => {
+      const remaining = prev.filter(t => !t.exited)
+      if (activeTabIdRef.current && !remaining.some(t => t.sessionId === activeTabIdRef.current)) {
+        setActiveTabId(remaining.length > 0 ? remaining[remaining.length - 1].sessionId : null)
+      }
+      if (remaining.length === 0) setIsVisible(false)
+      return remaining
+    })
+  }, [])
+
   const handleTabExit = useCallback((sessionId: string, _code: number) => {
     // Find the tab before modifying state — we need the taskId for needsReview
     const tab = tabsRef.current.find(t => t.sessionId === sessionId)
@@ -473,6 +484,19 @@ export function TerminalPanel() {
         {/* Right actions */}
         {isVisible && tabs.length > 0 && (
           <div className="flex items-center gap-0.5 ml-auto shrink-0">
+            {tabs.some(t => t.exited) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleClearExited}
+                    className="p-1 text-muted-foreground hover:text-foreground transition-colors rounded-sm hover:bg-background/30"
+                  >
+                    <XCircle className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Clear exited terminals</TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button

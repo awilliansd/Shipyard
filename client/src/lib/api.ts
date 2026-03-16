@@ -1,13 +1,31 @@
 const BASE_URL = '/api';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+interface RequestOptions extends RequestInit {
+  timeout?: number;
+}
+
+async function request<T>(path: string, options?: RequestOptions): Promise<T> {
+  const { timeout, ...fetchOptions } = options || {};
   const headers: Record<string, string> = {};
-  if (options?.body) {
+  if (fetchOptions.body) {
     headers['Content-Type'] = 'application/json';
   }
+
+  let signal = fetchOptions.signal;
+  let controller: AbortController | undefined;
+  if (timeout && !signal) {
+    controller = new AbortController();
+    signal = controller.signal;
+    setTimeout(() => controller!.abort(), timeout);
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
     headers,
-    ...options,
+    ...fetchOptions,
+    signal,
+  }).catch((err) => {
+    if (err.name === 'AbortError') throw new Error('Request timed out');
+    throw err;
   });
 
   if (!res.ok) {
@@ -64,7 +82,7 @@ export const api = {
   undoCommit: (projectId: string) =>
     request(`/projects/${projectId}/git/undo-commit`, { method: 'POST' }),
   generateCommitMessage: (projectId: string) =>
-    request<{ message: string; source: 'cli' | 'api' }>(`/projects/${projectId}/git/generate-commit-message`, { method: 'POST' }),
+    request<{ message: string; source: 'cli' | 'api' }>(`/projects/${projectId}/git/generate-commit-message`, { method: 'POST', timeout: 150_000 }),
 
   // Terminals (native launchers)
   launchTerminal: (projectId: string, type: string) => request('/terminals/launch', { method: 'POST', body: JSON.stringify({ projectId, type }) }),
@@ -135,6 +153,10 @@ export const api = {
   searchFiles: (query: string, projectId?: string) =>
     request<{ results: Array<{ name: string; path: string; projectId: string; projectName: string; type: 'file' | 'dir'; extension?: string }> }>(
       `/search/files?q=${encodeURIComponent(query)}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`
+    ),
+  searchContent: (query: string, projectId?: string, caseSensitive = false) =>
+    request<{ results: Array<{ file: string; filePath: string; projectId: string; projectName: string; extension?: string; matches: Array<{ line: number; text: string; column: number }> }>; totalMatches: number }>(
+      `/search/content?q=${encodeURIComponent(query)}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}${caseSensitive ? '&caseSensitive=true' : ''}`
     ),
 
   // Files

@@ -339,6 +339,141 @@ export async function fileRoutes(app: FastifyInstance) {
     }
   );
 
+  // Search file contents across projects
+  app.get<{ Querystring: { q: string; projectId?: string; limit?: string; caseSensitive?: string } }>(
+    '/api/search/content',
+    async (request, reply) => {
+      const query = (request.query.q || '').trim();
+      if (!query || query.length < 2) {
+        return { results: [] };
+      }
+
+      const limit = Math.min(parseInt(request.query.limit || '50', 10), 100);
+      const caseSensitive = request.query.caseSensitive === 'true';
+      const filterProjectId = request.query.projectId;
+      const projects = await getProjects();
+      const targetProjects = filterProjectId
+        ? projects.filter(p => p.id === filterProjectId)
+        : projects;
+
+      const MAX_DEPTH = 6;
+      const MAX_FILE_SIZE_SEARCH = 512 * 1024; // 512KB for content search
+      const MAX_CONTEXT_CHARS = 200;
+
+      interface ContentMatch {
+        line: number;
+        text: string;
+        column: number;
+      }
+
+      interface ContentResult {
+        file: string;
+        filePath: string;
+        projectId: string;
+        projectName: string;
+        extension?: string;
+        matches: ContentMatch[];
+      }
+
+      const results: ContentResult[] = [];
+      let totalMatches = 0;
+      const MAX_TOTAL_MATCHES = 500;
+      const MAX_MATCHES_PER_FILE = 20;
+
+      let searchRegex: RegExp;
+      try {
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        searchRegex = new RegExp(escaped, caseSensitive ? 'g' : 'gi');
+      } catch {
+        return { results: [] };
+      }
+
+      // Additional ignore patterns for content search (large/binary files)
+      const CONTENT_IGNORE_EXT = new Set([
+        '.lock', '.map', '.min.js', '.min.css', '.bundle.js',
+        '.woff', '.woff2', '.ttf', '.eot', '.otf',
+        '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.bmp',
+        '.pdf', '.zip', '.gz', '.tar', '.rar', '.7z',
+        '.mp3', '.mp4', '.avi', '.mov', '.mkv', '.webm',
+        '.exe', '.dll', '.so', '.dylib', '.bin',
+        '.sqlite', '.db',
+      ]);
+
+      async function searchDir(dirPath: string, relPath: string, projectId: string, projectName: string, depth: number) {
+        if (depth > MAX_DEPTH || results.length >= limit || totalMatches >= MAX_TOTAL_MATCHES) return;
+        try {
+          const entries = await readdir(dirPath, { withFileTypes: true });
+          for (const entry of entries) {
+            if (results.length >= limit || totalMatches >= MAX_TOTAL_MATCHES) break;
+            if (IGNORE_NAMES.has(entry.name)) continue;
+            if (entry.name.startsWith('.') && entry.name !== '.env.example') continue;
+
+            const entryRelPath = relPath ? `${relPath}/${entry.name}` : entry.name;
+
+            if (entry.isDirectory()) {
+              await searchDir(join(dirPath, entry.name), entryRelPath, projectId, projectName, depth + 1);
+            } else if (entry.isFile()) {
+              const ext = extname(entry.name).toLowerCase();
+              if (CONTENT_IGNORE_EXT.has(ext)) continue;
+
+              const mime = getMimeHint(ext, entry.name);
+              if (mime === 'application/octet-stream') continue;
+              if (mime.startsWith('image/')) continue;
+
+              try {
+                const filePath = join(dirPath, entry.name);
+                const st = await stat(filePath);
+                if (st.size > MAX_FILE_SIZE_SEARCH || st.size === 0) continue;
+
+                const content = await readFile(filePath, 'utf8');
+                const lines = content.split('\n');
+                const fileMatches: ContentMatch[] = [];
+
+                for (let i = 0; i < lines.length; i++) {
+                  if (fileMatches.length >= MAX_MATCHES_PER_FILE) break;
+                  searchRegex.lastIndex = 0;
+                  const match = searchRegex.exec(lines[i]);
+                  if (match) {
+                    const lineText = lines[i].length > MAX_CONTEXT_CHARS
+                      ? lines[i].substring(Math.max(0, match.index - 60), match.index + query.length + 60)
+                      : lines[i];
+                    fileMatches.push({
+                      line: i + 1,
+                      text: lineText.trimEnd(),
+                      column: match.index,
+                    });
+                  }
+                }
+
+                if (fileMatches.length > 0) {
+                  results.push({
+                    file: entry.name,
+                    filePath: entryRelPath,
+                    projectId,
+                    projectName,
+                    extension: ext || undefined,
+                    matches: fileMatches,
+                  });
+                  totalMatches += fileMatches.length;
+                }
+              } catch {
+                // Skip files we can't read (binary, permissions, etc)
+              }
+            }
+          }
+        } catch {
+          // Skip directories we can't read
+        }
+      }
+
+      await Promise.all(
+        targetProjects.map(p => searchDir(p.path, '', p.id, p.name, 0))
+      );
+
+      return { results: results.slice(0, limit), totalMatches };
+    }
+  );
+
   // Open folder in system explorer
   app.post<{ Params: { projectId: string }; Body: { path: string } }>(
     '/api/projects/:projectId/files/open-folder',

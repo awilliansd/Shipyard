@@ -264,16 +264,21 @@ export async function gitRoutes(app: FastifyInstance) {
         // Priority: API (fast, no spawn) → CLI → error
         const config = await claudeService.loadClaudeConfig();
         if (config) {
-          const { default: Anthropic } = await import('@anthropic-ai/sdk');
-          const client = new Anthropic({ apiKey: config.apiKey });
-          const response = await client.messages.create({
-            model: commitModel,
-            max_tokens: 256,
-            system: prompt,
-            messages: [{ role: 'user', content: compactDiff }],
-          });
-          const text = response.content[0].type === 'text' ? response.content[0].text : '';
-          return { message: text.trim(), source: 'api' };
+          try {
+            const { default: Anthropic } = await import('@anthropic-ai/sdk');
+            const client = new Anthropic({ apiKey: config.apiKey, timeout: 30_000 });
+            const response = await client.messages.create({
+              model: commitModel,
+              max_tokens: 256,
+              system: prompt,
+              messages: [{ role: 'user', content: compactDiff }],
+            });
+            const text = response.content[0].type === 'text' ? response.content[0].text : '';
+            return { message: text.trim(), source: 'api' };
+          } catch (apiErr: any) {
+            // API failed — fall through to CLI
+            request.log.warn?.(`Commit message API failed, trying CLI: ${apiErr.message}`);
+          }
         }
 
         // Fallback: CLI
@@ -284,7 +289,7 @@ export async function gitRoutes(app: FastifyInstance) {
             model: 'haiku',
             maxTurns: 1,
             outputFormat: 'text',
-            timeout: 60000,
+            timeout: 120_000,
             cwd: path,
           });
           return { message, source: 'cli' };

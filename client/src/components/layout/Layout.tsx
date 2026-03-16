@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TabBar } from './TabBar'
 import { GlobalSearch } from './GlobalSearch'
+import { FileContentSearch } from './FileContentSearch'
 import { TabsProvider } from '@/hooks/useTabs'
 import { TerminalPanel } from '@/components/terminals/TerminalPanel'
 
@@ -32,6 +33,7 @@ export function Layout() {
         </main>
       </div>
       <GlobalSearch />
+      <FileContentSearch />
     </TabsProvider>
   )
 }
