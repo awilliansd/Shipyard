@@ -168,10 +168,10 @@ const itemsFirstCollision: CollisionDetection = (args) => {
   return closestCenter(args)
 }
 
-function DroppableColumn({ col, children, count, taskIds, onCopy, projectId, onAddingChange, isAdding, hiddenCount, onShowMore }: {
+function DroppableColumn({ col, children, count, taskIds, onCopy, projectId, onAddingChange, isAdding, hiddenCount, onShowMore, headerExtra }: {
   col: ColumnConfig; children: React.ReactNode; count: number; taskIds: string[]
   onCopy?: () => void; projectId?: string; onAddingChange?: (adding: boolean) => void; isAdding?: boolean
-  hiddenCount?: number; onShowMore?: () => void
+  hiddenCount?: number; onShowMore?: () => void; headerExtra?: React.ReactNode
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.key })
   const Icon = col.icon
@@ -204,6 +204,7 @@ function DroppableColumn({ col, children, count, taskIds, onCopy, projectId, onA
             </TooltipContent>
           </Tooltip>
         )}
+        {headerExtra}
         {projectId && (
           <Tooltip>
             <TooltipTrigger asChild>
