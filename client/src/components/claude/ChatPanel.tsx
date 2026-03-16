@@ -7,6 +7,7 @@ import { Bot, Send, Settings, Loader2, ChevronDown, ChevronRight, Trash2, Sparkl
 import { cn } from '@/lib/utils'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
 
 interface ChatPanelProps {
   projectId: string
@@ -146,7 +147,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
               )}>
                 {msg.role === 'assistant' ? (
                   <div className="prose prose-xs prose-invert max-w-none [&_p]:mb-1 [&_p]:mt-0 [&_pre]:text-[10px] [&_code]:text-[10px] [&_li]:my-0">
-                    <Markdown remarkPlugins={[remarkGfm]}>
+                    <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                       {msg.content || (isStreaming && i === messages.length - 1 ? '...' : '')}
                     </Markdown>
                   </div>

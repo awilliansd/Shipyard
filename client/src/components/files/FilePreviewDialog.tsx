@@ -6,6 +6,7 @@ import { Copy, Download, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
 function extname(p: string): string {
   const dot = p.lastIndexOf('.')
   return dot > 0 ? p.slice(dot) : ''
@@ -104,7 +105,7 @@ export function FilePreviewDialog({ projectId, filePath, onClose }: FilePreviewD
     if (data.mimeHint === 'text/markdown') {
       return (
         <div className="prose prose-invert prose-sm max-w-none p-4 overflow-auto h-full scrollbar-dark">
-          <Markdown remarkPlugins={[remarkGfm]}>{data.content}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{data.content}</Markdown>
         </div>
       )
     }

@@ -3,6 +3,7 @@ import { FileCode, Loader2, Eye, Code } from 'lucide-react'
 import { toast } from 'sonner'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
 import { EditorTabBar } from './EditorTabBar'
 import { CodeMirrorEditor } from './CodeMirrorEditor'
 import { useFileContent, useSaveFile } from '@/hooks/useFiles'
@@ -171,7 +172,7 @@ export function EditorPanel({
               ) : showPreview ? (
                 <div className="h-full overflow-auto scrollbar-dark p-6">
                   <div className="prose prose-invert prose-sm max-w-none">
-                    <Markdown remarkPlugins={[remarkGfm]}>{tab.content}</Markdown>
+                    <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{tab.content}</Markdown>
                   </div>
                 </div>
               ) : (
