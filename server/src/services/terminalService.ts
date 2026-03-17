@@ -22,6 +22,8 @@ export interface TerminalSession {
   pty: import('node-pty').IPty;
   createdAt: string;
   taskId?: string;
+  /** True while prompt injection is in progress — resize is deferred */
+  injecting?: boolean;
 }
 
 const sessions = new Map<string, TerminalSession>();
@@ -180,13 +182,31 @@ export function listSessions(projectId?: string): Omit<TerminalSession, 'pty'>[]
   return list;
 }
 
+// Pending resizes to apply after injection completes
+const pendingResizes = new Map<string, { cols: number; rows: number }>();
+
 export function resizeSession(id: string, cols: number, rows: number): boolean {
   const session = sessions.get(id);
   if (!session) return false;
+  // Defer resize during prompt injection — ConPTY on Windows can lose data
+  // when resize and write happen concurrently
+  if (session.injecting) {
+    pendingResizes.set(id, { cols, rows });
+    return true;
+  }
   try {
     session.pty.resize(cols, rows);
   } catch {}
   return true;
+}
+
+function applyPendingResize(id: string): void {
+  const pending = pendingResizes.get(id);
+  if (!pending) return;
+  pendingResizes.delete(id);
+  const session = sessions.get(id);
+  if (!session) return;
+  try { session.pty.resize(pending.cols, pending.rows); } catch {}
 }
 
 export function listAiSessions(): Omit<TerminalSession, 'pty'>[] {
@@ -260,26 +280,44 @@ export function writeChunked(
 }
 
 /**
- * Monitor PTY output and inject `prompt` once output has settled, meaning
- * Claude CLI has finished its startup banners and is waiting for input.
+ * Monitor PTY output and inject `prompt` once Claude CLI is ready.
  *
- * Strategy: after a minimum wait, look for a period of "silence" (no new
- * output) which indicates the CLI is ready. Falls back to a maximum wait
- * to avoid hanging forever.
+ * Uses a two-phase strategy:
+ * 1. **Ready detection** — watches accumulated output for Claude CLI's prompt
+ *    indicator (e.g. the `>` or `❯` prompt after the startup banner).  Falls
+ *    back to silence-based detection (no output for SETTLE_TIME) and a hard
+ *    MAX_WAIT ceiling.
+ * 2. **Post-injection verification** — after injecting, monitors whether
+ *    Claude CLI produces new output (= started processing).  If no output
+ *    appears within VERIFY_TIMEOUT, the prompt is re-sent (up to MAX_RETRIES).
+ *
+ * During injection the session is flagged (`session.injecting = true`) so that
+ * resize operations are deferred — ConPTY on Windows can lose data when resize
+ * and write happen concurrently.
  */
 export function injectPromptWhenReady(sessionId: string, prompt: string): void {
   const session = sessions.get(sessionId);
   if (!session) return;
 
   let lastOutputTime = Date.now();
+  let accumulatedOutput = '';
   const startTime = Date.now();
   const MAX_WAIT = 30_000;   // 30s max wait before giving up and sending anyway
   const SETTLE_TIME = 1_200; // 1.2s of silence = CLI is ready
   const MIN_WAIT = 3_000;    // Always wait at least 3s (shell + claude startup)
 
+  // Regex to detect Claude CLI's idle prompt at the end of output.
+  // Matches lines ending with `> ` or `❯ ` (with optional ANSI escapes).
+  const PROMPT_RE = /(?:^|\n)\s*(?:\x1b\[[0-9;]*m)*[>❯]\s*(?:\x1b\[[0-9;]*m)*\s*$/;
+
   // Listen for PTY output to track when it last produced data
-  const disposable = session.pty.onData(() => {
+  const disposable = session.pty.onData((data: string) => {
     lastOutputTime = Date.now();
+    accumulatedOutput += data;
+    // Cap accumulated buffer to avoid unbounded memory
+    if (accumulatedOutput.length > 32_000) {
+      accumulatedOutput = accumulatedOutput.slice(-16_000);
+    }
   });
 
   const checkInterval = setInterval(() => {
@@ -295,17 +333,25 @@ export function injectPromptWhenReady(sessionId: string, prompt: string): void {
     // Give up after max wait — send anyway
     if (elapsed > MAX_WAIT) {
       cleanup();
-      sendPrompt();
+      doInject();
       return;
     }
 
     // Wait at least MIN_WAIT
     if (elapsed < MIN_WAIT) return;
 
-    // Check if output has settled (no new output for SETTLE_TIME)
+    // Prefer content-based detection: Claude CLI prints a prompt character
+    // when ready for input.
+    if (PROMPT_RE.test(accumulatedOutput)) {
+      cleanup();
+      doInject();
+      return;
+    }
+
+    // Fallback: silence-based detection (no new output for SETTLE_TIME)
     if (now - lastOutputTime >= SETTLE_TIME) {
       cleanup();
-      sendPrompt();
+      doInject();
     }
   }, 200);
 
@@ -314,12 +360,60 @@ export function injectPromptWhenReady(sessionId: string, prompt: string): void {
     try { disposable.dispose(); } catch {}
   }
 
-  function sendPrompt() {
-    // Wrap in bracketed paste markers so Claude CLI treats the entire
-    // prompt as a single paste event instead of interpreting each \n as Enter
-    const pasteData = '\x1b[200~' + prompt + '\x1b[201~';
-    writeChunked(sessionId, pasteData, { sendEnter: true });
+  function doInject() {
+    const s = sessions.get(sessionId);
+    if (!s) return;
+    s.injecting = true;
+    sendPromptWithRetry(sessionId, prompt, 0, () => {
+      const s2 = sessions.get(sessionId);
+      if (s2) s2.injecting = false;
+      applyPendingResize(sessionId);
+    });
   }
+}
+
+const MAX_RETRIES = 2;
+const VERIFY_TIMEOUT = 5_000; // 5s to detect CLI activity after injection
+
+function sendPromptWithRetry(
+  sessionId: string,
+  prompt: string,
+  attempt: number,
+  onDone: () => void,
+): void {
+  const session = sessions.get(sessionId);
+  if (!session) { onDone(); return; }
+
+  // Wrap in bracketed paste markers so Claude CLI treats the entire
+  // prompt as a single paste event instead of interpreting each \n as Enter
+  const pasteData = '\x1b[200~' + prompt + '\x1b[201~';
+  writeChunked(sessionId, pasteData, { sendEnter: true });
+
+  // Estimate how long the chunked write takes:
+  // (chunks * 20ms) + 500ms for Enter
+  const chunks = Math.ceil(pasteData.length / 256);
+  const writeTime = (chunks * 20) + 500 + 200; // +200ms margin
+
+  // After the write completes, verify that the CLI started processing
+  // by checking if new output appeared.
+  setTimeout(() => {
+    if (!sessions.has(sessionId)) { onDone(); return; }
+
+    let gotOutput = false;
+    const verifyDisposable = session.pty.onData(() => { gotOutput = true; });
+
+    setTimeout(() => {
+      try { verifyDisposable.dispose(); } catch {}
+
+      if (gotOutput || attempt >= MAX_RETRIES) {
+        // Success (or exhausted retries) — we're done
+        onDone();
+      } else {
+        // No output detected — CLI may not have received the prompt. Retry.
+        sendPromptWithRetry(sessionId, prompt, attempt + 1, onDone);
+      }
+    }, VERIFY_TIMEOUT);
+  }, writeTime);
 }
 
 // Clean up all sessions on server shutdown
