@@ -223,7 +223,6 @@ export async function claudeRoutes(app: FastifyInstance) {
 
         for await (const chunk of claudeCliService.streamPrompt(fullPrompt, {
           model: 'sonnet',
-          maxTurns: 1,
           timeout: 300000,
           cwd,
         })) {
@@ -273,7 +272,7 @@ export async function claudeRoutes(app: FastifyInstance) {
         const cwd = await getProjectPath(projectId);
         const result = await claudeCliService.runPrompt(
           `${systemInstructions}\n\n${userMessage}`,
-          { model: 'haiku', maxTurns: 1, timeout: 30_000, hardTimeout: 45_000, cwd },
+          { outputFormat: 'text', timeout: 30_000, hardTimeout: 45_000, cwd },
         );
         try {
           const parsed = parseJsonResponse(result);
@@ -335,7 +334,6 @@ Respond ONLY with valid JSON array, no markdown fences. Example:
         const result = await claudeCliService.runPrompt(systemInstructions, {
           input: rawText,
           model: 'sonnet',
-          maxTurns: 1,
           timeout: 90000,
           cwd,
         });
@@ -423,7 +421,6 @@ Respond ONLY with valid JSON (no markdown fences):
         const result = await claudeCliService.runPrompt(systemInstructions, {
           input: rawText,
           model: 'sonnet',
-          maxTurns: 1,
           timeout: 120000,
           cwd,
         });

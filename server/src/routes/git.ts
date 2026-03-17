@@ -311,8 +311,6 @@ export async function gitRoutes(app: FastifyInstance) {
             try {
               const message = await claudeCliService.runPrompt(prompt, {
                 input: compactDiff,
-                model: 'haiku',
-                maxTurns: 1,
                 outputFormat: 'text',
                 timeout: 30_000,
                 hardTimeout: 45_000,

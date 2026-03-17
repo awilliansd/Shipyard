@@ -45,7 +45,6 @@ export async function getCliStatus(): Promise<boolean> {
 export interface RunPromptOptions {
   input?: string;
   model?: string;
-  maxTurns?: number;
   outputFormat?: 'text' | 'json';
   timeout?: number;
   /** Absolute deadline — kills the process after this many ms regardless of activity */
@@ -56,7 +55,6 @@ export interface RunPromptOptions {
 function buildCliArgs(options?: RunPromptOptions): string[] {
   const args = ['-p'];
   if (options?.model) args.push('--model', options.model);
-  if (options?.maxTurns) args.push('--max-turns', String(options.maxTurns));
   if (options?.outputFormat) args.push('--output-format', options.outputFormat);
   args.push('--no-session-persistence');
   return args;
@@ -102,7 +100,8 @@ export async function runPrompt(prompt: string, options?: RunPromptOptions): Pro
       clearTimeout(timer);
       timer = setTimeout(() => {
         proc.kill();
-        settle(() => reject(new Error(`Claude CLI timed out (no output for ${Math.round(timeout / 1000)}s)`)));
+        const detail = stderr.trim() ? ` stderr: ${stderr.trim().slice(0, 200)}` : '';
+        settle(() => reject(new Error(`Claude CLI timed out (no output for ${Math.round(timeout / 1000)}s)${detail}`)));
       }, timeout);
     };
     resetTimer();
@@ -112,7 +111,8 @@ export async function runPrompt(prompt: string, options?: RunPromptOptions): Pro
     if (options?.hardTimeout) {
       hardTimer = setTimeout(() => {
         proc.kill();
-        settle(() => reject(new Error(`Claude CLI exceeded hard timeout (${Math.round(options.hardTimeout! / 1000)}s)`)));
+        const detail = stderr.trim() ? ` stderr: ${stderr.trim().slice(0, 200)}` : '';
+        settle(() => reject(new Error(`Claude CLI exceeded hard timeout (${Math.round(options.hardTimeout! / 1000)}s)${detail}`)));
       }, options.hardTimeout);
     }
 
