@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X, GitCompareArrows } from 'lucide-react'
 import { FileIcon } from '@/components/files/FileIcon'
 import { cn } from '@/lib/utils'
 import type { EditorTab } from '@/hooks/useEditorTabs'
@@ -34,6 +34,9 @@ export function EditorTabBar({ tabs, activeTabPath, onSelectTab, onCloseTab }: E
             className="h-3.5 w-3.5 shrink-0"
           />
           <span className="truncate">{tab.name}</span>
+          {tab.diffMode && (
+            <span title="Diff view"><GitCompareArrows className="h-3 w-3 text-blue-400 shrink-0" /></span>
+          )}
           {tab.isDirty && (
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" title="Unsaved changes" />
           )}

@@ -17,6 +17,7 @@ interface FileExplorerProps {
   projectId: string
   projectPath: string
   onOpenInEditor?: (path: string, name: string, extension: string) => void
+  activeFilePath?: string | null
 }
 
 interface TreeNodeProps {
@@ -32,9 +33,10 @@ interface TreeNodeProps {
   onStartRename: (path: string) => void
   onFinishRename: (entry: FileEntry, newName: string) => void
   onCancelRename: () => void
+  activeFilePath?: string | null
 }
 
-function TreeNode({ entry, projectId, depth, expanded, onToggle, onPreview, onContextAction, onOpenInEditor, renamingPath, onStartRename, onFinishRename, onCancelRename }: TreeNodeProps) {
+function TreeNode({ entry, projectId, depth, expanded, onToggle, onPreview, onContextAction, onOpenInEditor, renamingPath, onStartRename, onFinishRename, onCancelRename, activeFilePath }: TreeNodeProps) {
   const isOpen = expanded.has(entry.path)
   const { data, isLoading } = useFileTree(projectId, entry.path, entry.type === 'dir' && isOpen)
   const [contextOpen, setContextOpen] = useState(false)
@@ -79,12 +81,15 @@ function TreeNode({ entry, projectId, depth, expanded, onToggle, onPreview, onCo
     }
   }
 
+  const isActive = entry.type === 'file' && entry.path === activeFilePath
+
   return (
     <div>
       <div
         className={cn(
           'flex items-center gap-1 py-0.5 px-1 rounded cursor-pointer group',
-          'hover:bg-accent/50 transition-colors text-xs'
+          'hover:bg-accent/50 transition-colors text-xs',
+          isActive && 'bg-blue-500/15 text-blue-300'
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
@@ -208,6 +213,7 @@ function TreeNode({ entry, projectId, depth, expanded, onToggle, onPreview, onCo
                 onStartRename={onStartRename}
                 onFinishRename={onFinishRename}
                 onCancelRename={onCancelRename}
+                activeFilePath={activeFilePath}
               />
             ))
           )}
@@ -222,7 +228,7 @@ function TreeNode({ entry, projectId, depth, expanded, onToggle, onPreview, onCo
   )
 }
 
-export function FileExplorer({ projectId, projectPath, onOpenInEditor }: FileExplorerProps) {
+export function FileExplorer({ projectId, projectPath, onOpenInEditor, activeFilePath }: FileExplorerProps) {
   const [sectionOpen, setSectionOpen] = useState(false)
   const [expandTree, setExpandTree] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -344,6 +350,7 @@ export function FileExplorer({ projectId, projectPath, onOpenInEditor }: FileExp
                     onStartRename={setRenamingPath}
                     onFinishRename={handleFinishRename}
                     onCancelRename={() => setRenamingPath(null)}
+                    activeFilePath={activeFilePath}
                   />
                 ))}
               </div>

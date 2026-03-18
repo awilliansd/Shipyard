@@ -15,9 +15,11 @@ interface GitPanelProps {
   subRepos?: string[]
   isGitRepo?: boolean
   onOpenInEditor?: (path: string, name: string, extension: string) => void
+  onOpenDiffInEditor?: (path: string, name: string, extension: string, diffMode: 'staged' | 'unstaged', subrepo?: string) => void
+  activeFilePath?: string | null
 }
 
-function SingleRepoPanel({ projectId, subrepo, onOpenInEditor }: { projectId: string; subrepo?: string; onOpenInEditor?: (path: string, name: string, extension: string) => void }) {
+function SingleRepoPanel({ projectId, subrepo, onOpenInEditor, onOpenDiffInEditor, activeFilePath }: { projectId: string; subrepo?: string; onOpenInEditor?: (path: string, name: string, extension: string) => void; onOpenDiffInEditor?: (path: string, name: string, extension: string, diffMode: 'staged' | 'unstaged', subrepo?: string) => void; activeFilePath?: string | null }) {
   const { data: status, isLoading, isFetching, refetch } = useGitStatus(projectId, subrepo)
   const { data: logData } = useGitLog(projectId, subrepo)
   const { data: mainCommitData } = useGitMainCommit(projectId, status?.current, subrepo)
@@ -218,7 +220,7 @@ function SingleRepoPanel({ projectId, subrepo, onOpenInEditor }: { projectId: st
           {stagedOpen && (
             <div className="space-y-1">
               {stagedFiles.map(({ file, status: s }: { file: string; status: string }) => (
-                <FileChange key={`staged-${file}`} projectId={projectId} file={file} status={s} staged subrepo={subrepo} onOpenInEditor={onOpenInEditor} />
+                <FileChange key={`staged-${file}`} projectId={projectId} file={file} status={s} staged subrepo={subrepo} onOpenInEditor={onOpenInEditor} onOpenDiffInEditor={onOpenDiffInEditor} activeFilePath={activeFilePath} />
               ))}
             </div>
           )}
@@ -267,7 +269,7 @@ function SingleRepoPanel({ projectId, subrepo, onOpenInEditor }: { projectId: st
           {unstagedOpen && (
             <div className="space-y-1">
               {unstagedFiles.map(({ file, status: s }) => (
-                <FileChange key={`unstaged-${file}`} projectId={projectId} file={file} status={s} staged={false} subrepo={subrepo} onOpenInEditor={onOpenInEditor} />
+                <FileChange key={`unstaged-${file}`} projectId={projectId} file={file} status={s} staged={false} subrepo={subrepo} onOpenInEditor={onOpenInEditor} onOpenDiffInEditor={onOpenDiffInEditor} activeFilePath={activeFilePath} />
               ))}
             </div>
           )}
@@ -352,7 +354,7 @@ function SingleRepoPanel({ projectId, subrepo, onOpenInEditor }: { projectId: st
   )
 }
 
-export function GitPanel({ projectId, subRepos, isGitRepo, onOpenInEditor }: GitPanelProps) {
+export function GitPanel({ projectId, subRepos, isGitRepo, onOpenInEditor, onOpenDiffInEditor, activeFilePath }: GitPanelProps) {
   const hasSubRepos = subRepos && subRepos.length > 0
 
   // Build list of repo tabs
@@ -370,7 +372,7 @@ export function GitPanel({ projectId, subRepos, isGitRepo, onOpenInEditor }: Git
 
   // If only one repo (root or single sub-repo), render directly without tabs
   if (repoTabs.length <= 1) {
-    return <SingleRepoPanel projectId={projectId} subrepo={repoTabs[0]?.key} onOpenInEditor={onOpenInEditor} />
+    return <SingleRepoPanel projectId={projectId} subrepo={repoTabs[0]?.key} onOpenInEditor={onOpenInEditor} onOpenDiffInEditor={onOpenDiffInEditor} activeFilePath={activeFilePath} />
   }
 
   return (
@@ -400,6 +402,8 @@ export function GitPanel({ projectId, subRepos, isGitRepo, onOpenInEditor }: Git
         projectId={projectId}
         subrepo={activeRepo}
         onOpenInEditor={onOpenInEditor}
+        onOpenDiffInEditor={onOpenDiffInEditor}
+        activeFilePath={activeFilePath}
       />
     </div>
   )

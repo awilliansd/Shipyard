@@ -18,6 +18,14 @@ export function useGitDiff(projectId: string | undefined, file?: string, staged 
   })
 }
 
+export function useGitFileAtRef(projectId: string | undefined, file: string | undefined, ref = 'HEAD', subrepo?: string) {
+  return useQuery({
+    queryKey: ['git-show', projectId, file, ref, subrepo],
+    queryFn: () => api.getGitFileAtRef(projectId!, file!, ref, subrepo),
+    enabled: !!projectId && !!file,
+  })
+}
+
 export function useGitLog(projectId: string | undefined, subrepo?: string) {
   return useQuery({
     queryKey: ['git-log', projectId, subrepo],

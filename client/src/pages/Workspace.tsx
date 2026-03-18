@@ -61,6 +61,11 @@ export function Workspace() {
     setWorkspaceMode('editor')
   }, [editor])
 
+  const handleOpenDiffInEditor = useCallback((path: string, name: string, extension: string, diffMode: 'staged' | 'unstaged', subrepo?: string) => {
+    editor.openFile(path, name, extension, '', { diffMode, subrepo })
+    setWorkspaceMode('editor')
+  }, [editor])
+
   if (!project) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -185,9 +190,9 @@ export function Workspace() {
         {/* Sidebar - 1/4 width */}
         <div className="w-64 lg:w-72 xl:w-80 2xl:w-[22rem] border-l overflow-y-auto p-4 space-y-6 shrink-0 bg-card/50 scrollbar-dark">
           <TerminalLauncher projectId={project.id} projectPath={project.path} projectName={project.name} />
-          <FileExplorer projectId={project.id} projectPath={project.path} onOpenInEditor={handleOpenInEditor} />
+          <FileExplorer projectId={project.id} projectPath={project.path} onOpenInEditor={handleOpenInEditor} activeFilePath={editor.activeTabPath} />
           {(project.isGitRepo || (project.subRepos && project.subRepos.length > 0)) && (
-            <GitPanel projectId={project.id} subRepos={project.subRepos} isGitRepo={project.isGitRepo} onOpenInEditor={handleOpenInEditor} />
+            <GitPanel projectId={project.id} subRepos={project.subRepos} isGitRepo={project.isGitRepo} onOpenInEditor={handleOpenInEditor} onOpenDiffInEditor={handleOpenDiffInEditor} activeFilePath={editor.activeTabPath} />
           )}
         </div>
       </div>

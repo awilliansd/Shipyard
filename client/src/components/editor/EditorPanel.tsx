@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FileCode, Loader2, Eye, Code } from 'lucide-react'
+import { FileCode, Loader2, Eye, Code, GitCompareArrows } from 'lucide-react'
 import { toast } from 'sonner'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import { EditorTabBar } from './EditorTabBar'
 import { CodeMirrorEditor } from './CodeMirrorEditor'
+import { DiffEditor } from './DiffEditor'
 import { useFileContent, useSaveFile } from '@/hooks/useFiles'
+import { useGitFileAtRef } from '@/hooks/useGit'
 import type { EditorTab } from '@/hooks/useEditorTabs'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.mdx'])
@@ -48,6 +50,31 @@ function TabContentLoader({ projectId, tab, onInit }: { projectId: string; tab: 
   }
 
   return null
+}
+
+function DiffTabContent({ projectId, tab }: { projectId: string; tab: EditorTab }) {
+  const { data: headData, isLoading: headLoading } = useGitFileAtRef(
+    projectId,
+    tab.path,
+    tab.diffMode === 'staged' ? 'HEAD' : 'HEAD',
+    tab.subrepo
+  )
+
+  if (headLoading || tab.needsFetch) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  return (
+    <DiffEditor
+      original={headData?.content ?? ''}
+      modified={tab.content}
+      extension={tab.extension}
+    />
+  )
 }
 
 export function EditorPanel({
@@ -136,26 +163,34 @@ export function EditorPanel({
         onCloseTab={handleCloseTab}
       />
 
-      {/* Markdown preview toggle bar */}
-      {isMarkdown && activeTab && !activeTab.needsFetch && (
+      {/* Toolbar: markdown preview toggle + diff mode indicator */}
+      {activeTab && !activeTab.needsFetch && (isMarkdown || activeTab.diffMode) && (
         <div className="flex items-center gap-1 px-2 py-1 border-b bg-card/50 shrink-0">
-          <button
-            onClick={togglePreview}
-            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
-            title={isPreview ? 'Show code' : 'Show preview'}
-          >
-            {isPreview ? (
-              <>
-                <Code className="h-3.5 w-3.5" />
-                <span>Code</span>
-              </>
-            ) : (
-              <>
-                <Eye className="h-3.5 w-3.5" />
-                <span>Preview</span>
-              </>
-            )}
-          </button>
+          {isMarkdown && (
+            <button
+              onClick={togglePreview}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+              title={isPreview ? 'Show code' : 'Show preview'}
+            >
+              {isPreview ? (
+                <>
+                  <Code className="h-3.5 w-3.5" />
+                  <span>Code</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5" />
+                  <span>Preview</span>
+                </>
+              )}
+            </button>
+          )}
+          {activeTab.diffMode && (
+            <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
+              <GitCompareArrows className="h-3.5 w-3.5 text-blue-400" />
+              <span>Diff: HEAD vs {activeTab.diffMode === 'staged' ? 'staged' : 'working tree'}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -169,6 +204,8 @@ export function EditorPanel({
             >
               {tab.needsFetch ? (
                 <TabContentLoader projectId={projectId} tab={tab} onInit={onInitContent} />
+              ) : tab.diffMode ? (
+                <DiffTabContent projectId={projectId} tab={tab} />
               ) : showPreview ? (
                 <div className="h-full overflow-auto scrollbar-dark p-6">
                   <div className="prose prose-invert prose-sm max-w-none">

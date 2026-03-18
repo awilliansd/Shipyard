@@ -89,6 +89,25 @@ export async function gitRoutes(app: FastifyInstance) {
     }
   );
 
+  app.get<{ Params: { projectId: string }; Querystring: { file: string; ref?: string; subrepo?: string } }>(
+    '/api/projects/:projectId/git/show',
+    async (request, reply) => {
+      const path = await getProjectPath(request.params.projectId, request.query.subrepo);
+      if (!path) return reply.status(404).send({ error: 'Project not found' });
+
+      try {
+        const content = await gitService.getFileAtRef(path, request.query.file, request.query.ref || 'HEAD');
+        return { content };
+      } catch (err: any) {
+        // File may not exist in HEAD (new file) — various git error messages
+        if (err.message?.includes('does not exist') || err.message?.includes('exists on disk') || err.message?.includes('fatal')) {
+          return { content: '' };
+        }
+        return reply.status(500).send({ error: err.message });
+      }
+    }
+  );
+
   app.post<{ Params: { projectId: string }; Body: { file: string; subrepo?: string } }>(
     '/api/projects/:projectId/git/stage',
     async (request, reply) => {

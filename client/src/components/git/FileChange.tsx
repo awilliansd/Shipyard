@@ -23,9 +23,11 @@ interface FileChangeProps {
   staged: boolean
   subrepo?: string
   onOpenInEditor?: (path: string, name: string, extension: string) => void
+  onOpenDiffInEditor?: (path: string, name: string, extension: string, diffMode: 'staged' | 'unstaged', subrepo?: string) => void
+  activeFilePath?: string | null
 }
 
-export function FileChange({ projectId, file, status, staged, subrepo, onOpenInEditor }: FileChangeProps) {
+export function FileChange({ projectId, file, status, staged, subrepo, onOpenInEditor, onOpenDiffInEditor, activeFilePath }: FileChangeProps) {
   const [showDiff, setShowDiff] = useState(false)
   const [expandDiff, setExpandDiff] = useState(false)
   const [previewPath, setPreviewPath] = useState<string | null>(null)
@@ -46,18 +48,22 @@ export function FileChange({ projectId, file, status, staged, subrepo, onOpenInE
   const ext = fileName.lastIndexOf('.') > 0 ? fileName.slice(fileName.lastIndexOf('.')) : ''
   const isPreviewOnly = PREVIEW_ONLY_EXTENSIONS.has(ext.toLowerCase())
 
+  const isActive = file === activeFilePath
+
   const handleFileClick = () => {
     if (status === 'D') return
-    if (isPreviewOnly || !onOpenInEditor) {
+    if (isPreviewOnly || (!onOpenInEditor && !onOpenDiffInEditor)) {
       setPreviewPath(file)
-    } else {
+    } else if (onOpenDiffInEditor && status !== '?') {
+      onOpenDiffInEditor(file, fileName, ext, staged ? 'staged' : 'unstaged', subrepo)
+    } else if (onOpenInEditor) {
       onOpenInEditor(file, fileName, ext)
     }
   }
 
   return (
     <div className="border rounded-md overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors">
+      <div className={cn("flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors", isActive && 'bg-blue-500/15')}>
         <button onClick={() => setShowDiff(!showDiff)} className="shrink-0" title="Toggle diff">
           {showDiff ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>

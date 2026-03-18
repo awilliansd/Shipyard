@@ -41,6 +41,11 @@ export async function getDiff(projectPath: string, file?: string, staged = false
   return git.diff(args);
 }
 
+export async function getFileAtRef(projectPath: string, file: string, ref = 'HEAD'): Promise<string> {
+  const git = getGit(projectPath);
+  return git.show([`${ref}:${file}`]);
+}
+
 export async function stageFile(projectPath: string, file: string): Promise<void> {
   const git = getGit(projectPath);
   await git.add(file);

@@ -8,6 +8,8 @@ export interface EditorTab {
   content: string
   isDirty: boolean
   needsFetch: boolean
+  diffMode?: 'staged' | 'unstaged'
+  subrepo?: string
 }
 
 interface PersistedTab {
@@ -89,10 +91,16 @@ export function useEditorTabs(projectId: string) {
     persistActiveTab(projectId, activeTabPath)
   }, [projectId, activeTabPath])
 
-  const openFile = useCallback((path: string, name: string, extension: string, content: string) => {
+  const openFile = useCallback((path: string, name: string, extension: string, content: string, options?: { diffMode?: 'staged' | 'unstaged'; subrepo?: string }) => {
     setTabs(prev => {
       const existing = prev.find(t => t.path === path)
-      if (existing) return prev
+      if (existing) {
+        // Update diff mode if changed
+        if (options?.diffMode !== existing.diffMode) {
+          return prev.map(t => t.path === path ? { ...t, diffMode: options?.diffMode, subrepo: options?.subrepo } : t)
+        }
+        return prev
+      }
       return [...prev, {
         path,
         name,
@@ -101,6 +109,8 @@ export function useEditorTabs(projectId: string) {
         content,
         isDirty: false,
         needsFetch: content === '',
+        diffMode: options?.diffMode,
+        subrepo: options?.subrepo,
       }]
     })
     setActiveTabPath(path)

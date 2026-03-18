@@ -75,6 +75,7 @@ export const api = {
   // Git
   getGitStatus: (projectId: string, subrepo?: string) => request<any>(`/projects/${projectId}/git/status${subrepo ? `?subrepo=${encodeURIComponent(subrepo)}` : ''}`),
   getGitDiff: (projectId: string, file?: string, staged = false, subrepo?: string) => request<{ diff: string }>(`/projects/${projectId}/git/diff?${file ? `file=${encodeURIComponent(file)}&` : ''}staged=${staged}${subrepo ? `&subrepo=${encodeURIComponent(subrepo)}` : ''}`),
+  getGitFileAtRef: (projectId: string, file: string, ref = 'HEAD', subrepo?: string) => request<{ content: string }>(`/projects/${projectId}/git/show?file=${encodeURIComponent(file)}&ref=${encodeURIComponent(ref)}${subrepo ? `&subrepo=${encodeURIComponent(subrepo)}` : ''}`),
   stageFile: (projectId: string, file: string, subrepo?: string) => request(`/projects/${projectId}/git/stage`, { method: 'POST', body: JSON.stringify({ file, subrepo }) }),
   stageAll: (projectId: string, subrepo?: string) => request(`/projects/${projectId}/git/stage-all`, { method: 'POST', body: JSON.stringify({ subrepo }) }),
   unstageFile: (projectId: string, file: string, subrepo?: string) => request(`/projects/${projectId}/git/unstage`, { method: 'POST', body: JSON.stringify({ file, subrepo }) }),
