@@ -119,7 +119,7 @@ function TreeNode({ entry, projectId, depth, expanded, onToggle, onPreview, onCo
             onClick={handleClick}
           >
             <FileIcon name={entry.name} extension={entry.extension} type={entry.type} isOpen={isOpen} className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{entry.name}</span>
+            <span className="truncate" title={entry.name}>{entry.name}</span>
             {entry.type === 'file' && entry.size !== undefined && entry.size > 100_000 && (
               <span className="text-[9px] text-muted-foreground/50 shrink-0">
                 {entry.size > 1_048_576 ? `${(entry.size / 1_048_576).toFixed(1)}M` : `${Math.round(entry.size / 1024)}K`}

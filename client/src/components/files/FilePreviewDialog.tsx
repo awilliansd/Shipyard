@@ -146,7 +146,7 @@ export function FilePreviewDialog({ projectId, filePath, onClose }: FilePreviewD
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <FileIcon name={fileName} extension={ext} type="file" />
-              <DialogTitle className="text-sm font-medium truncate">
+              <DialogTitle className="text-sm font-medium truncate" title={filePath || undefined}>
                 {filePath}
               </DialogTitle>
               {data && data.mimeHint !== 'too-large' && (
