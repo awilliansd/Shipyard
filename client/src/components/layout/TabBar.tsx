@@ -1,9 +1,11 @@
-import { X, Home } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { X, Home, HelpCircle } from 'lucide-react'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useTabs } from '@/hooks/useTabs'
 import { useProjects, type Project } from '@/hooks/useProjects'
 import { useGitStatus } from '@/hooks/useGit'
+import { AboutModal } from './AboutModal'
 
 function ProjectTab({ tabId, project, isActive, onSwitch, onClose }: {
   tabId: string
@@ -61,38 +63,54 @@ export function TabBar() {
   const { data: projects } = useProjects()
   const location = useLocation()
   const navigate = useNavigate()
+  const [isAboutOpen, setIsAboutOpen] = useState(false)
 
   const isHome = location.pathname === '/' || location.pathname === '/tasks' || location.pathname === '/settings'
 
-  if (tabs.length === 0) return null
+  useEffect(() => {
+    // @ts-expect-error - electronAPI is injected
+    if (window.electronAPI?.onMenuEvent) {
+      // @ts-expect-error
+      return window.electronAPI.onMenuEvent((event: string) => {
+        if (event === 'navigate-help') {
+          navigate('/help')
+        } else if (event === 'show-about') {
+          setIsAboutOpen(true)
+        }
+      })
+    }
+  }, [navigate])
 
   return (
-    <div className="h-9 bg-muted/30 border-b flex items-end px-1 gap-0.5 shrink-0 overflow-x-auto">
-      {/* Home tab */}
-      <button
-        className={cn(
-          'flex items-center gap-1.5 px-3 h-8 text-xs rounded-t-md transition-colors shrink-0',
-          isHome
-            ? 'bg-background border border-b-0 text-foreground font-medium'
-            : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-        )}
-        onClick={() => navigate('/')}
-      >
-        <Home className="h-3 w-3" />
-        Home
-      </button>
+    <div className="h-9 bg-muted/30 border-b flex items-end px-1 gap-0.5 shrink-0">
+      <div className="flex-1 flex items-end gap-0.5 overflow-x-auto min-w-0">
+        {/* Home tab */}
+        <button
+          className={cn(
+            'flex items-center gap-1.5 px-3 h-8 text-xs rounded-t-md transition-colors shrink-0',
+            isHome
+              ? 'bg-background border border-b-0 text-foreground font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+          )}
+          onClick={() => navigate('/')}
+        >
+          <Home className="h-3 w-3" />
+          Home
+        </button>
 
-      {/* Project tabs */}
-      {tabs.map(tab => (
-        <ProjectTab
-          key={tab.id}
-          tabId={tab.id}
-          project={projects?.find(p => p.id === tab.id)}
-          isActive={tab.id === activeTabId}
-          onSwitch={() => switchTab(tab.id)}
-          onClose={() => closeTab(tab.id)}
-        />
-      ))}
+        {/* Project tabs */}
+        {tabs.map(tab => (
+          <ProjectTab
+            key={tab.id}
+            tabId={tab.id}
+            project={projects?.find(p => p.id === tab.id)}
+            isActive={tab.id === activeTabId}
+            onSwitch={() => switchTab(tab.id)}
+            onClose={() => closeTab(tab.id)}
+          />
+        ))}
+      </div>
+      <AboutModal open={isAboutOpen} onOpenChange={setIsAboutOpen} />
     </div>
   )
 }
