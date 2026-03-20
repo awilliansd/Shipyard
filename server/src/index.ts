@@ -10,14 +10,14 @@ import { terminalRoutes } from './routes/terminals.js';
 import { terminalWsRoutes } from './routes/terminalWs.js';
 import { settingsRoutes } from './routes/settings.js';
 import { syncRoutes } from './routes/sync.js';
-import { claudeRoutes } from './routes/claude.js';
+import { aiRoutes } from './routes/ai.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { fileRoutes } from './routes/files.js';
 import { logRoutes } from './routes/logs.js';
 import { initProjectDiscovery } from './services/projectDiscovery.js';
 import { loadSettings } from './services/settingsStore.js';
 import { isAvailable as isTerminalAvailable } from './services/terminalService.js';
-import { getCliStatus as isClaudeCliAvailable } from './services/claudeCliService.js';
+// import { getCliStatus as isClaudeCliAvailable } from './services/claudeCliService.js';
 import * as log from './services/logService.js';
 
 // Read config from env (set by Electron) or use defaults
@@ -82,7 +82,7 @@ await app.register(terminalRoutes);
 await app.register(terminalWsRoutes);
 await app.register(settingsRoutes);
 await app.register(syncRoutes);
-await app.register(claudeRoutes);
+await app.register(aiRoutes);
 await app.register(mcpRoutes);
 await app.register(fileRoutes);
 await app.register(logRoutes);
@@ -101,17 +101,14 @@ await initProjectDiscovery();
 try {
   await app.listen({ port: PORT, host: HOST });
   const termOk = isTerminalAvailable();
-  const cliOk = await isClaudeCliAvailable();
 
   log.info('server', `Server started on http://${HOST}:${PORT}`);
   log.info('server', `Terminal integration: ${termOk ? 'available' : 'disabled (node-pty not found)'}`);
-  log.info('server', `Claude CLI: ${cliOk ? 'available (subscription)' : 'not found'}`);
   if (IS_ELECTRON) log.info('server', 'Mode: Electron embedded');
 
   console.log(`Shipyard server running on http://${HOST}:${PORT}`);
   console.log(`Terminal integration: ${termOk ? 'available' : 'disabled (node-pty not found)'}`);
-  console.log(`Claude CLI: ${cliOk ? 'available (subscription)' : 'not found'}`);
-  console.log(`Claude API: check /api/claude/status`);
+  console.log(`AI Providers: check /api/ai/providers`);
   console.log(`MCP Server: endpoint at /mcp (configure in Settings)`);
   if (IS_ELECTRON) console.log('Mode: Electron embedded');
   if (STATIC_DIR) console.log(`Serving static files from: ${STATIC_DIR}`);

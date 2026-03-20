@@ -1,8 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { join } from 'path';
 import * as gitService from '../services/gitService.js';
-import * as claudeCliService from '../services/claudeCliService.js';
-import * as claudeService from '../services/claudeService.js';
+import * as ai from '../services/ai/index.js';
 import { getProjects } from '../services/projectDiscovery.js';
 import * as log from '../services/logService.js';
 
@@ -298,77 +297,39 @@ export async function gitRoutes(app: FastifyInstance) {
     }
   );
 
-  // Generate commit message via CLI (priority) or configured API key (fallback)
-  app.post<{ Params: { projectId: string }; Body: { subrepo?: string } }>(
+  // Generate commit message using the configured AI provider
+  app.post<{ Params: { projectId: string }; Body: { subrepo?: string, providerId?: string } }>(
     '/api/projects/:projectId/git/generate-commit-message',
     async (request, reply) => {
       const path = await getProjectPath(request.params.projectId, (request.body as any)?.subrepo);
       if (!path) return reply.status(404).send({ error: 'Project not found' });
 
-      // Hard deadline for the entire handler — prevents infinite waits
-      const DEADLINE = 60_000;
-      const deadline = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Commit message generation timed out (60s)')), DEADLINE)
-      );
+      // TODO: Get provider from a user setting. For now, use Claude or the first available.
+      const providerId = request.body.providerId || ai.getAvailableProviders()[0]?.id;
+      if (!providerId) {
+        return reply.status(503).send({ error: 'No AI providers available.' });
+      }
+
+      const definition = ai.getProviderDefinition(providerId);
+      const config = await ai.loadProviderConfig(providerId);
+
+      if (!definition || !config.apiKey) {
+        return reply.status(503).send({ error: `AI provider '${providerId}' is not configured.` });
+      }
 
       try {
-        const result = await Promise.race([deadline, (async () => {
-          const diff = await gitService.getDiff(path, undefined, true);
-          if (!diff.trim()) {
-            reply.status(400).send({ error: 'No staged changes' });
-            return null;
-          }
+        const diff = await gitService.getDiff(path, undefined, true);
+        if (!diff.trim()) {
+          return reply.status(400).send({ error: 'No staged changes' });
+        }
 
-          // Strip context lines (lines not starting with +/-) to reduce token count
-          const compactDiff = compactGitDiff(diff, 15000);
-          const prompt = 'Write a concise git commit message for this diff. Subject line under 72 chars. If multiple changes, add bullet points in body. Output ONLY the message, no quotes, no markdown fences, no explanation.';
-          const commitModel = 'claude-haiku-4-5-20251001';
+        const compactDiff = compactGitDiff(diff, 15000);
+        
+        const message = await definition.implementation.generateCommitMessage(config, compactDiff);
 
-          // Priority: CLI first (uses Max subscription) → configured API key → error
-          const cliOk = await claudeCliService.getCliStatus();
-          if (cliOk) {
-            try {
-              const message = await claudeCliService.runPrompt(prompt, {
-                input: compactDiff,
-                outputFormat: 'text',
-                timeout: 30_000,
-                hardTimeout: 45_000,
-                cwd: path,
-              });
-              return { message, source: 'cli' as const };
-            } catch (cliErr: any) {
-              log.warn('git', 'Commit message CLI failed, trying API', cliErr.message, request.params.projectId);
-              // Fall through to configured API key
-            }
-          }
-
-          // Fallback: configured API key only (not env key)
-          const apiKey = (await claudeService.loadClaudeConfig())?.apiKey;
-          if (apiKey) {
-            try {
-              const { default: Anthropic } = await import('@anthropic-ai/sdk');
-              const client = new Anthropic({ apiKey, timeout: 20_000 });
-              const response = await client.messages.create({
-                model: commitModel,
-                max_tokens: 256,
-                system: prompt,
-                messages: [{ role: 'user', content: compactDiff }],
-              });
-              const text = response.content[0].type === 'text' ? response.content[0].text : '';
-              return { message: text.trim(), source: 'api' as const };
-            } catch (apiErr: any) {
-              log.error('git', 'Commit message API also failed', apiErr.message, request.params.projectId);
-              throw apiErr;
-            }
-          }
-
-          reply.status(503).send({ error: 'No AI available. Install Claude CLI or configure API key.' });
-          return null;
-        })()]);
-
-        if (result) return result;
+        return { message, source: providerId };
       } catch (err: any) {
-        log.error('git', 'Generate commit message failed', err.message, request.params.projectId);
+        log.error('git', `Generate commit message failed for ${providerId}`, err.message, request.params.projectId);
         if (!reply.sent) {
           return reply.status(500).send({ error: err.message || 'Failed to generate commit message' });
         }
