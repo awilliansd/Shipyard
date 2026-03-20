@@ -10,15 +10,11 @@ export function parseJsonFromAiResponse<T = any>(text: string): T {
   try { return JSON.parse(trimmed) as T; } catch {}
 
   // Strip markdown fences
-  const fenceStripped = trimmed.replace(/^```(?:json)?\s*
-?/gim, '').replace(/
-?```\s*$/gim, '').trim();
+  const fenceStripped = trimmed.replace(/^```(?:json)?\s*\n?/gim, '').replace(/\n?```\s*$/gim, '').trim();
   try { return JSON.parse(fenceStripped) as T; } catch {}
 
   // Extract from code fences
-  const fenceMatch = trimmed.match(/```(?:json)?\s*
-([\s\S]*?)
-\s*```/);
+  const fenceMatch = trimmed.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/);
   if (fenceMatch) {
     try { return JSON.parse(fenceMatch[1].trim()) as T; } catch {}
   }
@@ -77,7 +73,7 @@ function extractBracketedJson(text: string): string | null {
       i++;
       while (i < text.length && text[i] !== '"') {
         // Handle escaped quotes
-        if (text[i] === '') {
+        if (text[i] === '\\') {
           i++;
         }
         i++;
@@ -95,3 +91,4 @@ function extractBracketedJson(text: string): string | null {
   }
   return null; // Unbalanced brackets
 }
+

@@ -5,6 +5,9 @@ import { loadEncryptedConfig, saveEncryptedConfig, deleteEncryptedConfig } from 
 
 // --- Provider Imports ---
 import { CLAUDE_PROVIDER_ID, claudeProvider, ClaudeConfig } from './providers/claude.js';
+import { OPENAI_PROVIDER_ID, openaiProvider, OpenAIConfig } from './providers/openai.js';
+import { GEMINI_PROVIDER_ID, geminiProvider, GeminiConfig } from './providers/gemini.js';
+import { OLLAMA_PROVIDER_ID, ollamaProvider, OllamaConfig } from './providers/ollama.js';
 
 // --- Provider Registry ---
 
@@ -28,7 +31,47 @@ const providerDefinitions: AiProviderDefinition<any>[] = [
       'claude-3-haiku-20240307',
     ]
   },
-  // Other providers (Gemini, OpenAI, Ollama) will be added here.
+  {
+    id: OPENAI_PROVIDER_ID,
+    name: 'OpenAI',
+    implementation: openaiProvider,
+    defaultConfig: {
+      apiKey: '',
+      model: 'gpt-4o',
+      maxTokens: 4096,
+    } as OpenAIConfig,
+    models: [
+      'gpt-4o',
+      'gpt-4-turbo',
+      'gpt-3.5-turbo',
+    ]
+  },
+  {
+    id: GEMINI_PROVIDER_ID,
+    name: 'Google Gemini',
+    implementation: geminiProvider,
+    defaultConfig: {
+      apiKey: '',
+      model: 'gemini-2.0-flash',
+      maxTokens: 4096,
+    } as GeminiConfig,
+    models: [
+      'gemini-2.0-flash',
+      'gemini-1.5-pro',
+      'gemini-1.5-flash',
+    ]
+  },
+  {
+    id: OLLAMA_PROVIDER_ID,
+    name: 'Ollama (Local)',
+    implementation: ollamaProvider,
+    defaultConfig: {
+      baseUrl: 'http://localhost:11434',
+      model: '',
+      maxTokens: 2048,
+    } as OllamaConfig,
+    models: []
+  },
 ];
 
 const providersById = new Map<string, AiProviderDefinition<any>>(
