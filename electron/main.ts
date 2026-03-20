@@ -160,6 +160,14 @@ function createAppMenu() {
     {
       label: 'File',
       submenu: [
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: async () => {
+            mainWindow?.webContents.send('menu-event', 'navigate-settings');
+          }
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },

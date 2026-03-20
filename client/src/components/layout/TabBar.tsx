@@ -76,6 +76,8 @@ export function TabBar() {
           navigate('/help')
         } else if (event === 'show-about') {
           setIsAboutOpen(true)
+        } else if (event === 'navigate-settings') {
+          navigate('/settings')
         }
       })
     }
