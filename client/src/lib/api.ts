@@ -136,19 +136,34 @@ export const api = {
   // Browse filesystem
   browse: (path: string) => request<{ directories: { name: string; path: string }[] }>('/browse', { method: 'POST', body: JSON.stringify({ path }) }),
 
-  // Claude AI
+  // AI Providers
+  getAiProviders: () => request<Array<{
+    id: string
+    name: string
+    models: string[]
+    configured: boolean
+    config: Record<string, any>
+  }>>('/ai/providers'),
+  saveAiProviderConfig: (providerId: string, config: Record<string, any>) =>
+    request<{ ok: boolean }>('/ai/config', { method: 'POST', body: JSON.stringify({ providerId, config }) }),
+  deleteAiProviderConfig: (providerId: string) =>
+    request<{ ok: boolean }>('/ai/config', { method: 'DELETE', body: JSON.stringify({ providerId }) }),
+  testAiProviderConfig: (providerId: string, config: Record<string, any>) =>
+    request<{ ok: boolean; error?: string }>('/ai/config/test', { method: 'POST', body: JSON.stringify({ providerId, config }) }),
+  analyzeTask: (projectId: string, title: string, taskId?: string, providerId?: string) =>
+    request<{ title: string; description: string; prompt: string }>('/ai/analyze-task', { method: 'POST', body: JSON.stringify({ projectId, title, taskId, providerId }), timeout: 60_000 }),
+  bulkOrganizeTasks: (projectId: string, rawText: string, providerId?: string) =>
+    request<{ tasks: Array<{ title: string; description: string; prompt: string; priority: string; status: string }> }>(
+      '/ai/bulk-organize', { method: 'POST', body: JSON.stringify({ projectId, rawText, providerId }) }
+    ),
+
+  // Claude AI (Legacy - backward compatibility)
   getClaudeStatus: () => request<{ configured: boolean; cliAvailable: boolean; envKeyAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
   saveClaudeConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
     request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),
   deleteClaudeConfig: () => request<{ ok: boolean }>('/claude/config', { method: 'DELETE' }),
   testClaudeKey: (apiKey: string) =>
     request<{ ok: boolean; error?: string }>('/claude/config/test', { method: 'POST', body: JSON.stringify({ apiKey }) }),
-  analyzeTask: (projectId: string, title: string, taskId?: string) =>
-    request<{ title: string; description: string; prompt: string }>('/claude/analyze-task', { method: 'POST', body: JSON.stringify({ projectId, title, taskId }), timeout: 60_000 }),
-  bulkOrganizeTasks: (projectId: string, rawText: string) =>
-    request<{ tasks: Array<{ title: string; description: string; prompt: string; priority: string; status: string }> }>(
-      '/claude/bulk-organize', { method: 'POST', body: JSON.stringify({ projectId, rawText }) }
-    ),
   manageTasks: (projectId: string, rawText: string, existingTasks: Array<{ id: string; title: string; description: string; status: string; priority: string }>) =>
     request<{ actions: Array<{ type: string; task?: any; taskId?: string; changes?: any; reason?: string; title?: string; existingTaskId?: string }>; summary: string }>(
       '/claude/manage-tasks', { method: 'POST', body: JSON.stringify({ projectId, rawText, existingTasks }) }
