@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, MenuItemConstructorOptions } from 'electron';
 import { join, resolve } from 'path';
-import { existsSync, mkdirSync, appendFileSync } from 'fs';
+import { existsSync, mkdirSync, appendFileSync, readFileSync } from 'fs';
 import { spawn, type ChildProcess } from 'child_process';
 import http from 'http';
 
@@ -120,6 +120,10 @@ function startServer(): Promise<void> {
         started = true;
         clearTimeout(timeout);
         reject(new Error(`Server exited with code ${code}`));
+        return;
+      }
+      if (!isQuitting) {
+        restartServerWithBackoff();
       }
     });
   });
@@ -138,6 +142,7 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let splashWindow: BrowserWindow | null = null;
+let restartInProgress = false;
 
 function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
@@ -162,6 +167,33 @@ function getTargetUrl() {
     return process.env.VITE_DEV_SERVER;
   }
   return `http://127.0.0.1:${PORT}`;
+}
+
+async function restartServerWithBackoff() {
+  if (restartInProgress || isQuitting) return;
+  restartInProgress = true;
+
+  const backoffMs = 1500;
+  logElectron(`[Electron] Server exited. Restarting in ${backoffMs}ms...`);
+  await delay(backoffMs);
+
+  try {
+    await startServer();
+    const targetUrl = getTargetUrl();
+    try {
+      await waitForServerReady(targetUrl, 12000, 400);
+    } catch (err) {
+      logElectron('[Electron] Server readiness check failed after restart:', err);
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.reload();
+      mainWindow.show();
+    }
+  } catch (err) {
+    logElectron('[Electron] Server restart failed:', err);
+  } finally {
+    restartInProgress = false;
+  }
 }
 
 async function waitForServerReady(url: string, timeoutMs = 15000, intervalMs = 300): Promise<void> {
@@ -201,6 +233,16 @@ async function waitForServerReady(url: string, timeoutMs = 15000, intervalMs = 3
 function createSplashWindow() {
   if (splashWindow) return;
 
+  let logoDataUrl = '';
+  try {
+    if (existsSync(ICON_PATH)) {
+      const buf = readFileSync(ICON_PATH);
+      logoDataUrl = `data:image/png;base64,${buf.toString('base64')}`;
+    }
+  } catch {
+    // ignore logo load failures
+  }
+
   splashWindow = new BrowserWindow({
     width: 520,
     height: 320,
@@ -217,6 +259,10 @@ function createSplashWindow() {
       contextIsolation: true,
     },
   });
+
+  const logoMarkup = logoDataUrl
+    ? `<img src="${logoDataUrl}" alt="Shipyard" style="width:64px;height:64px;margin:0 auto 8px;display:block;filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5));" />`
+    : '';
 
   const html = `
     <!doctype html>
@@ -266,6 +312,7 @@ function createSplashWindow() {
       </head>
       <body>
         <div class="card">
+          ${logoMarkup}
           <div class="logo">Shipyard</div>
           <div class="spinner"></div>
           <div class="sub">Carregando...</div>
