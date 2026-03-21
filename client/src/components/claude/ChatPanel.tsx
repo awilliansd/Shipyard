@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { useClaudeStatus, streamChat, type ChatMessage } from '@/hooks/useClaude'
-import { ClaudeConfigDialog } from './ClaudeConfigDialog'
+import { useAiProviders, useActiveProvider, streamChat, type ChatMessage } from '@/hooks/useAiProvider'
+import { AiProviderConfigDialog } from './AiProviderConfigDialog'
 import { Bot, Send, Settings, Loader2, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { playAiCompleteSound } from '@/lib/sounds'
@@ -15,7 +15,8 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ projectId }: ChatPanelProps) {
-  const { data: status } = useClaudeStatus()
+  const { data: providers } = useAiProviders()
+  const activeProvider = useActiveProvider()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -71,6 +72,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         })
         setIsStreaming(false)
       },
+      activeProvider?.id,
     )
   }
 
@@ -85,7 +87,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
     setMessages([])
   }
 
-  const aiAvailable = status?.configured || status?.cliAvailable
+  const aiAvailable = activeProvider?.configured
 
   if (!aiAvailable) {
     return (
@@ -93,14 +95,14 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />
-            Claude AI
+            AI Chat
           </h3>
           <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 text-muted-foreground" onClick={() => setConfigOpen(true)}>
             <Settings className="h-3 w-3" />
             Setup
           </Button>
         </div>
-        <ClaudeConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
+        <AiProviderConfigDialog providerId={activeProvider?.id || 'claude'} open={configOpen} onOpenChange={setConfigOpen} />
       </div>
     )
   }
@@ -114,11 +116,10 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         >
           {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           <Sparkles className="h-3.5 w-3.5" />
-          Claude AI
+          {activeProvider?.name || 'AI Chat'}
         </button>
         <div className="flex items-center gap-1">
-          <span className="text-[9px] font-medium text-muted-foreground/60">{status?.configured ? 'API' : 'CLI'}</span>
-          <div className="h-1.5 w-1.5 rounded-full bg-green-500" title={status?.configured ? 'API connected' : 'CLI available'} />
+          <div className="h-1.5 w-1.5 rounded-full bg-green-500" title={`${activeProvider?.name} active`} />
           {messages.length > 0 && (
             <button onClick={clearChat} className="text-muted-foreground hover:text-foreground p-0.5" title="Clear chat">
               <Trash2 className="h-3 w-3" />
@@ -167,7 +168,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Claude..."
+              placeholder={`Ask ${activeProvider?.name || 'AI'}...`}
               className="min-h-[32px] max-h-20 text-xs resize-none"
               rows={1}
               disabled={isStreaming}
@@ -185,7 +186,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         </div>
       )}
 
-      <ClaudeConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
+      <AiProviderConfigDialog providerId={activeProvider?.id || 'claude'} open={configOpen} onOpenChange={setConfigOpen} />
     </div>
   )
 }

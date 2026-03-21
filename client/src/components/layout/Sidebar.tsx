@@ -2,11 +2,13 @@ import { useState, useCallback, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, RefreshCw, Settings, ClipboardList, PanelLeftClose, PanelLeft,
-  ArrowUp, ArrowDown, FileEdit, Search, HelpCircle, ChevronRight, Loader, GitBranch, ScrollText
+  ArrowUp, ArrowDown, FileEdit, Search, ChevronRight, Loader, GitBranch, ScrollText, HelpCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { AboutModal } from './AboutModal'
 import { useProjects, type Project } from '@/hooks/useProjects'
 import { useAllTasks } from '@/hooks/useTasks'
 import { useTabs } from '@/hooks/useTabs'
