@@ -1,12 +1,16 @@
-import { useMemo } from 'react'
-import { Loader, ArrowRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState, useMemo } from 'react'
+import { Loader, ArrowRight, FolderSearch, FolderPlus, Rocket } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { ProjectList } from '@/components/projects/ProjectList'
 import { useProjects, type Project } from '@/hooks/useProjects'
 import { useAllTasks } from '@/hooks/useTasks'
 import { useTabs } from '@/hooks/useTabs'
 import { WelcomeWizard, useOnboarding } from '@/components/onboarding/WelcomeWizard'
+import { FolderBrowser } from '@/components/ui/folder-browser'
+import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { TaskCounts } from '@/components/projects/ProjectCard'
 
 export function Dashboard() {
@@ -56,9 +60,57 @@ export function Dashboard() {
       .slice(0, 6)
   }, [tasks, projectMap])
 
+  const [scanBrowserOpen, setScanBrowserOpen] = useState(false)
+  const [addBrowserOpen, setAddBrowserOpen] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [scannedProjects, setScannedProjects] = useState<{ path: string; name: string; techStack: string[]; isGitRepo: boolean }[]>([])
+  const queryClient = useQueryClient()
+
+  const handleScanFolder = async (path: string) => {
+    setScanBrowserOpen(false)
+    setScanning(true)
+    try {
+      const { projects: found } = await api.scanDirectory(path)
+      if (found.length === 0) {
+        toast.info('No projects found in that folder')
+      } else {
+        setScannedProjects(found)
+      }
+    } catch {
+      toast.error('Failed to scan folder')
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  const handleAddScanned = async () => {
+    const paths = scannedProjects.map(p => p.path)
+    try {
+      const { projects: added } = await api.addProjects(paths)
+      queryClient.setQueryData(['projects'], added)
+      toast.success(`Added ${added.length} project${added.length > 1 ? 's' : ''}!`)
+      setScannedProjects([])
+    } catch {
+      toast.error('Failed to add projects')
+    }
+  }
+
+  const handleAddFolders = async (paths: string[]) => {
+    setAddBrowserOpen(false)
+    try {
+      const { projects: added } = await api.addProjects(paths)
+      queryClient.setQueryData(['projects'], added)
+      toast.success(`Added ${added.length} project${added.length > 1 ? 's' : ''}!`)
+    } catch {
+      toast.error('Failed to add projects')
+    }
+  }
+
   if (onboarding.shouldShow) {
     return <WelcomeWizard onComplete={onboarding.complete} />
   }
+
+  const hasNoProjects = projects && projects.length === 0
 
   return (
     <>
@@ -88,16 +140,90 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Main content: ProjectList */}
-        <div className="px-4 lg:px-6 2xl:px-8 py-4">
-          {projects && (
-            <ProjectList
-              projects={projects}
-              taskCounts={taskCountsByProject}
-            />
-          )}
-        </div>
+        {/* Empty state when no projects */}
+        {hasNoProjects ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="flex flex-col items-center gap-6 max-w-md text-center">
+              <div className="p-4 rounded-full bg-muted">
+                <Rocket className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">No projects yet</h2>
+                <p className="text-sm text-muted-foreground">
+                  Add your project folders to start tracking tasks, git status, and more.
+                </p>
+              </div>
+
+              {/* Scanned results */}
+              {scannedProjects.length > 0 && (
+                <div className="w-full space-y-2">
+                  <p className="text-sm text-muted-foreground">Found {scannedProjects.length} project{scannedProjects.length > 1 ? 's' : ''}:</p>
+                  <div className="rounded-md border divide-y max-h-48 overflow-y-auto text-left">
+                    {scannedProjects.map(p => (
+                      <div key={p.path} className="px-3 py-2 text-sm">
+                        <span className="font-medium">{p.name}</span>
+                        {p.techStack.length > 0 && (
+                          <span className="ml-2 text-xs text-muted-foreground">{p.techStack.join(', ')}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <Button variant="outline" size="sm" onClick={() => setScannedProjects([])}>Cancel</Button>
+                    <Button size="sm" onClick={handleAddScanned}>Add all</Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              {scannedProjects.length === 0 && (
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setScanBrowserOpen(true)}
+                    disabled={scanning}
+                  >
+                    <FolderSearch className="h-4 w-4" />
+                    {scanning ? 'Scanning...' : 'Scan a folder'}
+                  </Button>
+                  <Button
+                    className="gap-2"
+                    onClick={() => setAddBrowserOpen(true)}
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                    Add project folders
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Main content: ProjectList */
+          <div className="px-4 lg:px-6 2xl:px-8 py-4">
+            {projects && (
+              <ProjectList
+                projects={projects}
+                taskCounts={taskCountsByProject}
+              />
+            )}
+          </div>
+        )}
       </div>
+
+      <FolderBrowser
+        open={scanBrowserOpen}
+        onOpenChange={setScanBrowserOpen}
+        onSelect={handleScanFolder}
+        title="Select folder to scan for projects"
+      />
+      <FolderBrowser
+        open={addBrowserOpen}
+        onOpenChange={setAddBrowserOpen}
+        onSelectMultiple={handleAddFolders}
+        multiSelect
+        title="Select project folders"
+      />
     </>
   )
 }
