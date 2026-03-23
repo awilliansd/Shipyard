@@ -109,7 +109,10 @@ export async function callApiWithOAuth(
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`API error ${response.status}: ${body.slice(0, 200)}`);
+      // Preserve status code in error so callers can distinguish rate limits (429)
+      const err = new Error(`API error ${response.status}: ${body.slice(0, 200)}`);
+      (err as any).status = response.status;
+      throw err;
     }
 
     const data = await response.json() as any;
