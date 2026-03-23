@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Loader, ArrowRight, FolderSearch, FolderPlus, Rocket } from 'lucide-react'
-import { Header } from '@/components/layout/Header'
+import { Loader, ArrowRight, FolderSearch, FolderPlus, Rocket, Inbox, CheckCircle2 } from 'lucide-react'
 import { ProjectList } from '@/components/projects/ProjectList'
 import { useProjects, type Project } from '@/hooks/useProjects'
 import { useAllTasks } from '@/hooks/useTasks'
@@ -112,16 +111,46 @@ export function Dashboard() {
 
   const hasNoProjects = projects && projects.length === 0
 
+  // Quick stats
+  const totalInbox = tasks?.filter(t => t.status === 'backlog' || t.status === 'todo').length || 0
+  const totalInProgress = tasks?.filter(t => t.status === 'in_progress').length || 0
+  const totalDone = tasks?.filter(t => t.status === 'done').length || 0
+
   return (
     <>
-      <Header title="Shipyard" />
       <div className="flex-1 overflow-y-auto scrollbar-dark">
-        {/* Working On banner */}
-        {workingOn.length > 0 && (
-          <div className="px-4 lg:px-6 2xl:px-8 pt-4 pb-2">
-            <div className="flex items-center gap-3 overflow-x-auto scrollbar-dark pb-1">
+        <div className="px-6 py-5 space-y-4">
+          {/* Header + stats */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="text-sm font-semibold">Dashboard</h1>
+              {projects && projects.length > 0 && (
+                <span className="text-[11px] text-muted-foreground/40">{projects.length} projects</span>
+              )}
+            </div>
+            {tasks && tasks.length > 0 && (
+              <div className="flex items-center gap-4 text-xs">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  {totalInbox} inbox
+                </span>
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                  {totalInProgress} active
+                </span>
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  {totalDone} done
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Working On banner */}
+          {workingOn.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-dark pb-0.5">
               <div className="flex items-center gap-1.5 shrink-0 text-xs text-yellow-500 font-medium">
-                <Loader className="h-3.5 w-3.5" />
+                <Loader className="h-3 w-3" />
                 Working On
               </div>
               {workingOn.map(task => (
@@ -130,19 +159,18 @@ export function Dashboard() {
                   onClick={() => openTab(task.projectId)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors text-xs shrink-0 group"
                 >
-                  <span className="text-muted-foreground">{task.projectName}:</span>
-                  <span className="font-mono text-muted-foreground/60">{task.id}</span>
+                  <span className="text-muted-foreground">{task.projectName}</span>
+                  <span className="text-muted-foreground/30">·</span>
                   <span className="truncate max-w-[200px] 2xl:max-w-[300px]">{task.title}</span>
                   <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Empty state when no projects */}
-        {hasNoProjects ? (
-          <div className="flex items-center justify-center min-h-[60vh]">
+          {/* Empty state when no projects */}
+          {hasNoProjects ? (
+          <div className="flex items-center justify-center min-h-[50vh]">
             <div className="flex flex-col items-center gap-6 max-w-md text-center">
               <div className="p-4 rounded-full bg-muted">
                 <Rocket className="h-10 w-10 text-muted-foreground" />
@@ -198,17 +226,16 @@ export function Dashboard() {
               )}
             </div>
           </div>
-        ) : (
-          /* Main content: ProjectList */
-          <div className="px-4 lg:px-6 2xl:px-8 py-4">
-            {projects && (
+          ) : (
+            /* Main content: ProjectList */
+            projects && (
               <ProjectList
                 projects={projects}
                 taskCounts={taskCountsByProject}
               />
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
 
       <FolderBrowser

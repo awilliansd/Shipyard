@@ -62,12 +62,10 @@ export function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const isHome = location.pathname === '/' || location.pathname === '/tasks' || location.pathname === '/settings'
-
-  if (tabs.length === 0) return null
+  const isHome = location.pathname === '/' || location.pathname === '/tasks' || location.pathname === '/settings' || location.pathname === '/help' || location.pathname === '/logs'
 
   return (
-    <div className="h-9 bg-muted/30 border-b flex items-end px-1 gap-0.5 shrink-0 overflow-x-auto">
+    <div className="h-9 bg-muted/30 border-b flex items-end px-1 gap-0.5 shrink-0 overflow-x-auto scrollbar-dark">
       {/* Home tab */}
       <button
         className={cn(
