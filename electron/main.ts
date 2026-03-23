@@ -2,6 +2,7 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog } from 'elec
 import { join, resolve } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { spawn, type ChildProcess } from 'child_process';
+import { request } from 'http';
 
 // ── Paths ──────────────────────────────────────────────────────────
 
@@ -37,6 +38,34 @@ mkdirSync(join(DATA_DIR, 'tasks'), { recursive: true });
 // Use different port than dev server (5420) to avoid conflicts
 const PORT = isDev ? 5420 : 5430;
 let serverProcess: ChildProcess | null = null;
+
+/** HTTP GET health check — resolves true if server responds, false on error */
+function checkServerReady(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const req = request(
+      { hostname: '127.0.0.1', port: PORT, path: '/api/settings', method: 'GET', timeout: 1000 },
+      (res) => {
+        res.resume(); // drain response
+        resolve(res.statusCode !== undefined && res.statusCode < 500);
+      },
+    );
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
+/** Poll the server with HTTP requests until it responds or we give up */
+async function waitForServer(maxAttempts = 30, intervalMs = 500): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    if (await checkServerReady()) {
+      console.log(`[Electron] Server confirmed ready (attempt ${i + 1})`);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  console.log('[Electron] Server health check timed out, proceeding anyway');
+}
 
 function startServer(): Promise<void> {
   return new Promise((res, reject) => {
@@ -80,13 +109,6 @@ function startServer(): Promise<void> {
 
     const proc = serverProcess!;
     let started = false;
-    const timeout = setTimeout(() => {
-      if (!started) {
-        started = true;
-        console.log('[Electron] Server ready detection timed out, proceeding anyway');
-        res();
-      }
-    }, 5000);
 
     proc.stdout?.on('data', (data: Buffer) => {
       const msg = data.toString();
@@ -94,8 +116,8 @@ function startServer(): Promise<void> {
       // Match our console.log: "Shipyard server running on http://..."
       if (!started && (msg.includes('running on') || msg.includes(`${PORT}`))) {
         started = true;
-        clearTimeout(timeout);
-        res();
+        // Server reported ready via stdout — confirm with HTTP health check
+        waitForServer(10, 300).then(() => res());
       }
     });
 
@@ -107,7 +129,6 @@ function startServer(): Promise<void> {
       console.error('[Electron] Server spawn error:', err);
       if (!started) {
         started = true;
-        clearTimeout(timeout);
         reject(err);
       }
     });
@@ -117,10 +138,18 @@ function startServer(): Promise<void> {
       serverProcess = null;
       if (!started) {
         started = true;
-        clearTimeout(timeout);
         reject(new Error(`Server exited with code ${code}`));
       }
     });
+
+    // Fallback: if stdout never matches, poll with HTTP health checks
+    setTimeout(() => {
+      if (!started) {
+        started = true;
+        console.log('[Electron] Stdout detection timed out, falling back to HTTP polling');
+        waitForServer().then(() => res());
+      }
+    }, 5000);
   });
 }
 
@@ -161,6 +190,25 @@ function createWindow() {
   } else {
     mainWindow.loadURL(`http://127.0.0.1:${PORT}`);
   }
+
+  // Retry loading if the page fails (server not ready yet)
+  let loadRetries = 0;
+  const maxLoadRetries = 5;
+  const serverUrl = isDev && process.env.VITE_DEV_SERVER
+    ? process.env.VITE_DEV_SERVER
+    : `http://127.0.0.1:${PORT}`;
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDesc) => {
+    if (loadRetries < maxLoadRetries) {
+      loadRetries++;
+      console.log(`[Electron] Page load failed (${errorDesc}), retry ${loadRetries}/${maxLoadRetries}...`);
+      setTimeout(() => {
+        mainWindow?.loadURL(serverUrl);
+      }, 1000 * loadRetries);
+    } else {
+      console.error(`[Electron] Page load failed after ${maxLoadRetries} retries: ${errorDesc}`);
+    }
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
