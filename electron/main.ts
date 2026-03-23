@@ -325,7 +325,7 @@ function createSplashWindow() {
           :root { color-scheme: dark; }
           body {
             margin: 0;
-            background: radial-gradient(120% 120% at 20% 10%, #1a1a22 0%, #0b0b0f 55%, #08080c 100%);
+            background: #0b0b0f;
             color: #e5e7eb;
             font-family: "Segoe UI", system-ui, sans-serif;
             display: grid;
@@ -334,11 +334,11 @@ function createSplashWindow() {
           }
           .card {
             text-align: center;
-            padding: 24px 28px;
-            border: 1px solid #1f1f2a;
-            border-radius: 14px;
-            background: rgba(12, 12, 18, 0.8);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+            padding: 0;
+            min-width: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
           }
           .logo {
             font-size: 20px;
