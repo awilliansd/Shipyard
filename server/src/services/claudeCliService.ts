@@ -15,18 +15,17 @@ export async function isCliAvailable(): Promise<boolean> {
       timeout: 5000,
       windowsHide: true,
     });
-    // On Windows, resolve the full path so spawn() can find it without shell
-    if (isWindows) {
-      try {
-        const { stdout } = await execFileAsync('where', ['claude'], {
-          timeout: 5000,
-          windowsHide: true,
-        });
-        const resolved = stdout.trim().split(/\r?\n/)[0];
-        if (resolved) cliPath = resolved;
-      } catch {
-        // If 'where' fails, keep using 'claude' and rely on shell fallback
-      }
+    // Resolve the full path so spawn() can find it without shell
+    const whichCmd = isWindows ? 'where' : 'which';
+    try {
+      const { stdout } = await execFileAsync(whichCmd, ['claude'], {
+        timeout: 5000,
+        windowsHide: true,
+      });
+      const resolved = stdout.trim().split(/\r?\n/)[0];
+      if (resolved) cliPath = resolved;
+    } catch {
+      // If resolution fails, keep using 'claude' and rely on shell fallback
     }
     return true;
   } catch {
