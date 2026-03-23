@@ -319,9 +319,31 @@ export async function gitRoutes(app: FastifyInstance) {
             return null;
           }
 
+          // Get recent commit messages for style consistency (like VS Code extensions)
+          let recentMessages = '';
+          try {
+            const logResult = await gitService.getLog(path, 10);
+            recentMessages = logResult.all
+              .map(c => c.message.split('\n')[0]) // subject lines only
+              .join('\n');
+          } catch { /* ignore — new repo with no commits */ }
+
           // Strip context lines (lines not starting with +/-) to reduce token count
           const compactDiff = compactGitDiff(diff, 15000);
-          const prompt = 'Write a concise git commit message for this diff. Subject line under 72 chars. If multiple changes, add bullet points in body. Output ONLY the message, no quotes, no markdown fences, no explanation.';
+
+          // Build a VS Code extension-style prompt with context
+          const prompt = [
+            'You are a git commit message generator. Write a commit message for the staged changes.',
+            '',
+            'Rules:',
+            '- Subject line: concise, imperative mood ("Add feature" not "Added feature"), under 72 chars',
+            '- If the change is small/single-purpose, output ONLY the subject line (no body)',
+            '- If multiple unrelated changes, add a blank line then bullet points in the body',
+            '- Output ONLY the raw commit message — no quotes, no markdown fences, no explanation',
+            '- Language: match the language of the recent commits below (if available)',
+            recentMessages ? `\nRecent commits (match this style):\n${recentMessages}` : '',
+          ].filter(Boolean).join('\n');
+
           const commitModel = 'claude-haiku-4-5-20251001';
 
           // Priority: CLI first (uses Max subscription) → configured API key → error
@@ -330,12 +352,15 @@ export async function gitRoutes(app: FastifyInstance) {
             try {
               const message = await claudeCliService.runPrompt(prompt, {
                 input: compactDiff,
+                model: commitModel,
                 outputFormat: 'text',
                 timeout: 30_000,
                 hardTimeout: 45_000,
                 cwd: path,
               });
-              return { message, source: 'cli' as const };
+              // Clean up: remove any wrapping quotes or markdown fences the AI might add
+              const cleaned = message.replace(/^["'`]+|["'`]+$/g, '').replace(/^```\w*\n?|\n?```$/g, '').trim();
+              return { message: cleaned, source: 'cli' as const };
             } catch (cliErr: any) {
               log.warn('git', 'Commit message CLI failed, trying API', cliErr.message, request.params.projectId);
               // Fall through to configured API key
@@ -355,7 +380,8 @@ export async function gitRoutes(app: FastifyInstance) {
                 messages: [{ role: 'user', content: compactDiff }],
               });
               const text = response.content[0].type === 'text' ? response.content[0].text : '';
-              return { message: text.trim(), source: 'api' as const };
+              const cleaned = text.replace(/^["'`]+|["'`]+$/g, '').replace(/^```\w*\n?|\n?```$/g, '').trim();
+              return { message: cleaned, source: 'api' as const };
             } catch (apiErr: any) {
               log.error('git', 'Commit message API also failed', apiErr.message, request.params.projectId);
               throw apiErr;
