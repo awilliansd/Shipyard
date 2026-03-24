@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { useLaunchTerminal, useOpenFolder, useUpdateProject, type Project } from '@/hooks/useProjects'
 import { useTabs } from '@/hooks/useTabs'
+import { useClaudeStatus } from '@/hooks/useClaude'
 import { toast } from 'sonner'
 
 export interface TaskCounts {
@@ -26,6 +27,8 @@ export function ProjectCard({ project, taskCounts }: ProjectCardProps) {
   const launchTerminal = useLaunchTerminal()
   const openFolder = useOpenFolder()
   const updateProject = useUpdateProject()
+  const { data: claudeStatus } = useClaudeStatus()
+  const isClaudeActive = claudeStatus?.providerId === 'claude'
 
   const handleLaunch = (e: React.MouseEvent, type: string) => {
     e.stopPropagation()
@@ -120,14 +123,16 @@ export function ProjectCard({ project, taskCounts }: ProjectCardProps) {
 
       {/* Quick actions - hover only */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity -mb-0.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-purple-400" onClick={e => handleLaunch(e, 'claude')}>
-              <Sparkles className="h-2.5 w-2.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>AI Assistant</TooltipContent>
-        </Tooltip>
+        {isClaudeActive && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-purple-400" onClick={e => handleLaunch(e, 'claude')}>
+                <Sparkles className="h-2.5 w-2.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>AI Assistant</TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-green-400" onClick={e => handleLaunch(e, 'dev')}>
