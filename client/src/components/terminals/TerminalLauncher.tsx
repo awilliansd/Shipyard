@@ -75,6 +75,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const mcpActive = mcpStatus?.enabled ?? false
   const aiAvailable = claudeStatus?.configured || claudeStatus?.cliAvailable
   const isClaudeActive = claudeStatus?.providerId === 'claude'
+  const activeProviderName = claudeStatus?.providerName || 'your AI assistant'
   const [taskManagerOpen, setTaskManagerOpen] = useState(false)
   const [skipPermissions, setSkipPermissions] = useState(() => {
     try { return localStorage.getItem('shipyard:skipPermissions') === 'true' } catch { return false }
@@ -95,6 +96,17 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
       const context = buildAiContext(projectName, projectPath, projectId, tasks || [], settings?.tasksDir || '')
       navigator.clipboard.writeText(context)
     }
+
+    // Only Claude has a local CLI integration right now.
+    if (!isClaudeActive) {
+      toast.success(
+        mcpActive
+          ? `MCP enabled — open ${activeProviderName} to connect`
+          : `Context copied — open ${activeProviderName} and paste it`
+      )
+      return
+    }
+
     if (hasIntegrated) {
       openIntegratedTerminal(projectId, assistantType)
     } else {
@@ -146,14 +158,22 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
             <TooltipTrigger asChild>
               <Button variant={aiAvailable ? "outline" : "default"} className="w-full justify-start gap-2 h-8 text-xs" onClick={handleLaunchAssistant}>
                 <Sparkles className="h-3.5 w-3.5" />
-                {mcpActive ? 'Open AI Assistant' : 'Open AI + Copy Context'}
+                {isClaudeActive
+                  ? (mcpActive ? 'Open AI Assistant' : 'Open AI + Copy Context')
+                  : 'Copy Context'}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
               <p className="max-w-[200px] text-xs">
-                {mcpActive
-                  ? 'Opens your AI assistant — MCP gives it access to projects and tasks automatically'
-                  : 'Copies project info + tasks to clipboard, then opens your AI assistant. Just paste to give context.'}
+                {isClaudeActive ? (
+                  mcpActive
+                    ? 'Opens your AI assistant — MCP gives it access to projects and tasks automatically'
+                    : 'Copies project info + tasks to clipboard, then opens your AI assistant. Just paste to give context.'
+                ) : (
+                  mcpActive
+                    ? 'MCP is enabled. Open your AI assistant and connect to Shipyard.'
+                    : 'Copies project info + tasks to clipboard. Open your AI assistant and paste it.'
+                )}
               </p>
             </TooltipContent>
           </Tooltip>

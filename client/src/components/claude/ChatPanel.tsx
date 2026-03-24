@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { useAiProviders, useActiveProvider, streamChat, type ChatMessage } from '@/hooks/useAiProvider'
+import { useActiveProvider, type ChatMessage } from '@/hooks/useAiProvider'
 import { AiProviderConfigDialog } from './AiProviderConfigDialog'
-import { Bot, Send, Settings, Loader2, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react'
+import { Send, Settings, Loader2, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { playAiCompleteSound } from '@/lib/sounds'
+import { api } from '@/lib/api'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
@@ -15,7 +16,6 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ projectId }: ChatPanelProps) {
-  const { data: providers } = useAiProviders()
   const activeProvider = useActiveProvider()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -43,37 +43,42 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
     setInput('')
     setIsStreaming(true)
 
-    // Add empty assistant message to stream into
-    const assistantMsg: ChatMessage = { role: 'assistant', content: '' }
-    setMessages([...newMessages, assistantMsg])
+    // Placeholder assistant message while waiting
+    setMessages([...newMessages, { role: 'assistant', content: '...' }])
 
-    await streamChat(
-      projectId,
-      newMessages,
-      (chunk) => {
-        setMessages(prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last.role === 'assistant') {
-            updated[updated.length - 1] = { ...last, content: last.content + chunk }
-          }
-          return updated
-        })
-      },
-      () => { setIsStreaming(false); playAiCompleteSound() },
-      (error) => {
-        setMessages(prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last.role === 'assistant' && !last.content) {
-            updated[updated.length - 1] = { ...last, content: `Error: ${error}` }
-          }
-          return updated
-        })
-        setIsStreaming(false)
-      },
-      activeProvider?.id,
-    )
+    try {
+      const result = await api.assistantChat(projectId, newMessages, activeProvider?.id)
+      const toolNames = Array.from(new Set((result.toolCalls || []).map(t => t.name)))
+      const updatedFiles = Array.from(new Set(
+        (result.toolCalls || [])
+          .filter(t => t.name === 'write_file' && t.ok)
+          .map(t => t.args?.path)
+          .filter(Boolean)
+      ))
+
+      const meta: string[] = []
+      if (updatedFiles.length > 0) meta.push(`Updated files: ${updatedFiles.join(', ')}`)
+      if (toolNames.length > 0) meta.push(`Tools: ${toolNames.join(', ')}`)
+
+      const content = meta.length > 0
+        ? `${result.message}\n\n_${meta.join(' · ')}_`
+        : result.message
+
+      setMessages(prev => {
+        const updated = [...prev]
+        updated[updated.length - 1] = { role: 'assistant', content }
+        return updated
+      })
+      setIsStreaming(false)
+      playAiCompleteSound()
+    } catch (err: any) {
+      setMessages(prev => {
+        const updated = [...prev]
+        updated[updated.length - 1] = { role: 'assistant', content: `Error: ${err.message || 'Request failed'}` }
+        return updated
+      })
+      setIsStreaming(false)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -95,7 +100,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />
-            AI Chat
+            AI Assistant
           </h3>
           <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 text-muted-foreground" onClick={() => setConfigOpen(true)}>
             <Settings className="h-3 w-3" />
@@ -116,7 +121,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         >
           {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           <Sparkles className="h-3.5 w-3.5" />
-          {activeProvider?.name || 'AI Chat'}
+          {activeProvider?.name || 'AI Assistant'}
         </button>
         <div className="flex items-center gap-1">
           <div className="h-1.5 w-1.5 rounded-full bg-green-500" title={`${activeProvider?.name} active`} />
@@ -137,7 +142,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
           <div className="max-h-64 overflow-y-auto p-2 space-y-2 scrollbar-dark">
             {messages.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-4">
-                Ask anything about this project...
+                Ask anything about this project. You can request file edits.
               </p>
             )}
             {messages.map((msg, i) => (

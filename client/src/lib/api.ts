@@ -159,6 +159,11 @@ export const api = {
     request<{ tasks: Array<{ title: string; description: string; prompt: string; priority: string; status: string }> }>(
       '/ai/bulk-organize', { method: 'POST', body: JSON.stringify({ projectId, rawText, providerId }) }
     ),
+  assistantChat: (projectId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, providerId?: string) =>
+    request<{ message: string; toolCalls: Array<{ name: string; args: Record<string, any>; ok: boolean; result?: any; error?: string }> }>(
+      '/ai/assistant',
+      { method: 'POST', body: JSON.stringify({ projectId, messages, providerId }) , timeout: 120_000 }
+    ),
 
   // Claude AI (Legacy - backward compatibility)
   getClaudeStatus: () => request<{ configured: boolean; cliAvailable: boolean; envKeyAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),

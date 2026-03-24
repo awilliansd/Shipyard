@@ -2,12 +2,20 @@
 
 import { FastifyInstance } from 'fastify';
 import * as ai from '../services/ai/index.js';
+import { OLLAMA_PROVIDER_ID } from '../services/ai/providers/ollama.js';
+import { runAssistantChat } from '../services/ai/assistantAgent.js';
 import { buildProjectContext, buildTaskContext } from '../services/claudeContextBuilder.js';
 import * as taskStore from '../services/taskStore.js';
 import * as log from '../services/logService.js';
 import { ChatMessage } from '../services/ai/types.js';
 
 export async function aiRoutes(app: FastifyInstance) {
+  const isConfigured = (providerId: string, config: any) => {
+    if (providerId === OLLAMA_PROVIDER_ID) {
+      return !!config?.baseUrl && !!config?.model;
+    }
+    return !!config?.apiKey;
+  };
 
   // --- Provider and Config Management ---
 
@@ -22,7 +30,7 @@ export async function aiRoutes(app: FastifyInstance) {
           id: p.id,
           name: p.name,
           models: p.models,
-          configured: !!apiKey,
+          configured: isConfigured(p.id, config),
           config: safeConfig,
         };
       })
@@ -62,7 +70,7 @@ export async function aiRoutes(app: FastifyInstance) {
     }
 
     const config = await ai.loadProviderConfig(providerId);
-    if (!config.apiKey) {
+    if (!isConfigured(providerId, config)) {
       return reply.status(400).send({ error: `Provider '${providerId}' is not configured.` });
     }
 
@@ -104,7 +112,7 @@ export async function aiRoutes(app: FastifyInstance) {
     }
 
     const config = await ai.loadProviderConfig(providerId);
-    if (!config.apiKey) {
+    if (!isConfigured(providerId, config)) {
       return reply.status(400).send({ error: `Provider '${providerId}' is not configured.` });
     }
 
@@ -140,7 +148,7 @@ export async function aiRoutes(app: FastifyInstance) {
     }
 
     const config = await ai.loadProviderConfig(providerId);
-    if (!config.apiKey) {
+    if (!isConfigured(providerId, config)) {
       return reply.status(400).send({ error: `Provider '${providerId}' is not configured.` });
     }
     
@@ -164,7 +172,7 @@ export async function aiRoutes(app: FastifyInstance) {
     }
 
     const config = await ai.loadProviderConfig(providerId);
-    if (!config.apiKey) {
+    if (!isConfigured(providerId, config)) {
       return reply.status(400).send({ error: `Provider '${providerId}' is not configured.` });
     }
 
@@ -178,6 +186,29 @@ export async function aiRoutes(app: FastifyInstance) {
     } catch (err: any) {
       log.error('ai', `Manage tasks failed for ${providerId}`, err.message, projectId);
       return reply.status(500).send({ error: `AI task management failed: ${err.message}` });
+    }
+  });
+
+  // --- Tool-enabled assistant chat ---
+  app.post<{ Body: { providerId: string; projectId: string; messages: ChatMessage[] } }>('/api/ai/assistant', async (request, reply) => {
+    const { providerId, projectId, messages } = request.body;
+
+    const definition = ai.getProviderDefinition(providerId);
+    if (!definition) {
+      return reply.status(400).send({ error: `Provider '${providerId}' not found.` });
+    }
+
+    const config = await ai.loadProviderConfig(providerId);
+    if (!isConfigured(providerId, config)) {
+      return reply.status(400).send({ error: `Provider '${providerId}' is not configured.` });
+    }
+
+    try {
+      const result = await runAssistantChat({ providerId, projectId, messages });
+      return result;
+    } catch (err: any) {
+      log.error('ai', `Assistant chat failed for ${providerId}`, err.message, projectId);
+      return reply.status(500).send({ error: `Assistant chat failed: ${err.message}` });
     }
   });
 }
