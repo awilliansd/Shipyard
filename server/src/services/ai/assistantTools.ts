@@ -669,12 +669,15 @@ function diffLines(oldLines: string[], newLines: string[]): DiffOp[] {
   return ops.reverse();
 }
 
+type Hunk = { oldStart: number; newStart: number; oldCount: number; newCount: number; lines: string[] };
+
 function buildHunks(ops: DiffOp[], context: number) {
-  const hunks: Array<{ oldStart: number; newStart: number; oldCount: number; newCount: number; lines: string[] }> = [];
+  const hunks: Hunk[] = [];
   let oldLine = 1;
   let newLine = 1;
 
-  let hunk: { oldStart: number; newStart: number; oldCount: number; newCount: number; lines: string[] } | null = null;
+  let currentHunk: Hunk = { oldStart: 0, newStart: 0, oldCount: 0, newCount: 0, lines: [] };
+  let hasCurrent = false;
   let preContext: DiffOp[] = [];
   let contextAfter = 0;
 
@@ -683,59 +686,62 @@ function buildHunks(ops: DiffOp[], context: number) {
     if (preContext.length > context) preContext.shift();
   };
 
-  const startHunk = () => {
+  const beginHunk = (): Hunk => {
     const oldStart = oldLine - preContext.length;
     const newStart = newLine - preContext.length;
-    hunk = { oldStart, newStart, oldCount: 0, newCount: 0, lines: [] };
+    currentHunk = { oldStart, newStart, oldCount: 0, newCount: 0, lines: [] };
+    const h = currentHunk;
     for (const ctx of preContext) {
-      hunk.lines.push(` ${ctx.line}`);
-      hunk.oldCount++;
-      hunk.newCount++;
+      h.lines.push(` ${ctx.line}`);
+      h.oldCount++;
+      h.newCount++;
     }
     preContext = [];
+    hasCurrent = true;
+    return h;
   };
 
-  const closeHunk = () => {
-    if (!hunk) return;
-    hunks.push(hunk);
-    hunk = null;
+  const endHunk = () => {
+    if (!hasCurrent) return;
+    hunks.push(currentHunk);
+    hasCurrent = false;
     contextAfter = 0;
   };
 
   for (const op of ops) {
     if (op.type === 'equal') {
-      if (hunk) {
-        hunk.lines.push(` ${op.line}`);
-        hunk.oldCount++;
-        hunk.newCount++;
+      if (hasCurrent) {
+        currentHunk.lines.push(` ${op.line}`);
+        currentHunk.oldCount++;
+        currentHunk.newCount++;
         contextAfter++;
         if (contextAfter >= context) {
           pushContext(op);
-          closeHunk();
+          endHunk();
         }
       } else {
         pushContext(op);
       }
       oldLine++;
       newLine++;
+      continue;
+    }
+
+    // add/del
+    const active = hasCurrent ? currentHunk : beginHunk();
+    contextAfter = 0;
+    if (op.type === 'del') {
+      active.lines.push(`-${op.line}`);
+      active.oldCount++;
+      oldLine++;
     } else {
-      if (!hunk) startHunk();
-      contextAfter = 0;
-      if (op.type === 'del') {
-        hunk!.lines.push(`-${op.line}`);
-        hunk!.oldCount++;
-        oldLine++;
-      } else {
-        hunk!.lines.push(`+${op.line}`);
-        hunk!.newCount++;
-        newLine++;
-      }
+      active.lines.push(`+${op.line}`);
+      active.newCount++;
+      newLine++;
     }
   }
 
-  if (hunk) {
-    closeHunk();
-  }
+  if (hasCurrent) endHunk();
   return hunks;
 }
 
