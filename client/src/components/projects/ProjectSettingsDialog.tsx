@@ -48,6 +48,12 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, defaultTab 
   const [skipPermissions, setSkipPermissions] = useState(() => {
     try { return localStorage.getItem('shipyard:skipPermissions') === 'true' } catch { return false }
   })
+  const [aiCliEnabled, setAiCliEnabled] = useState(() => {
+    try { return localStorage.getItem('shipyard:ai-cli-enabled') === 'true' } catch { return false }
+  })
+  const [aiCliCommand, setAiCliCommand] = useState(() => {
+    try { return localStorage.getItem('shipyard:ai-cli-command') || '' } catch { return '' }
+  })
   const [activeTab, setActiveTab] = useState(defaultTab || 'general')
   const { data: tasks } = useTasks(project.id)
   const [exporting, setExporting] = useState<string | null>(null)
@@ -364,6 +370,44 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, defaultTab 
                     )} />
                   </div>
                 </button>
+
+                <div className="flex items-center justify-between w-full px-3 py-2.5 rounded-md border">
+                  <div className="flex items-center gap-2.5">
+                    <Zap className={cn('h-4 w-4', aiCliEnabled ? 'text-blue-500' : 'text-muted-foreground/50')} />
+                    <div className="text-left">
+                      <span className="text-xs font-medium">Use custom AI CLI</span>
+                      <p className="text-[10px] text-muted-foreground">Example: gemini chat</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !aiCliEnabled
+                      setAiCliEnabled(next)
+                      localStorage.setItem('shipyard:ai-cli-enabled', String(next))
+                    }}
+                    className={cn(
+                      'w-8 h-4.5 rounded-full transition-colors relative',
+                      aiCliEnabled ? 'bg-blue-500' : 'bg-muted'
+                    )}
+                  >
+                    <div className={cn(
+                      'absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-transform',
+                      aiCliEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                    )} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={aiCliCommand}
+                    onChange={e => {
+                      setAiCliCommand(e.target.value)
+                      localStorage.setItem('shipyard:ai-cli-command', e.target.value)
+                    }}
+                    placeholder="AI CLI command (e.g., gemini chat)"
+                    className="h-7 text-xs"
+                  />
+                </div>
               </div>
             </div>
           </TabsContent>

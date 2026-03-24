@@ -61,6 +61,7 @@ export async function createSession(
   projectName?: string,
   taskId?: string,
   prompt?: string,
+  command?: string,
 ): Promise<string | null> {
   if (!nodePty) return null;
 
@@ -91,6 +92,8 @@ export async function createSession(
       initialCommand = 'claude --dangerously-skip-permissions';
     } else if (type === 'dev') {
       initialCommand = await detectDevCommand(projectPath);
+    } else if (type === 'ai-cli' && command) {
+      initialCommand = command;
     }
   } else {
     // Linux/macOS: interactive login shell (enables readline + history)
@@ -103,6 +106,8 @@ export async function createSession(
       initialCommand = 'claude --dangerously-skip-permissions';
     } else if (type === 'dev') {
       initialCommand = await detectDevCommand(projectPath);
+    } else if (type === 'ai-cli' && command) {
+      initialCommand = command;
     }
   }
 
@@ -110,7 +115,7 @@ export async function createSession(
   const shortName = projectName && projectName.length > maxLen
     ? projectName.slice(0, maxLen - 3) + '...'
     : projectName || projectId;
-  const typeLabels: Record<string, string> = { claude: 'Claude', 'claude-yolo': 'Claude', dev: 'Dev', shell: 'Shell', 'ai-resolve': 'AI', 'ai-manage': 'AI Tasks' };
+  const typeLabels: Record<string, string> = { claude: 'Claude', 'claude-yolo': 'Claude', dev: 'Dev', shell: 'Shell', 'ai-resolve': 'AI', 'ai-manage': 'AI Tasks', 'ai-cli': 'AI CLI' };
   const title = `[${shortName}] ${typeLabels[type] || 'Shell'}`;
 
   const spawnOptions: Record<string, any> = {

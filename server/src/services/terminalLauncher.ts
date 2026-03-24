@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { platform } from 'os';
 
-export type TerminalType = 'claude' | 'claude-yolo' | 'dev' | 'shell';
+export type TerminalType = 'claude' | 'claude-yolo' | 'dev' | 'shell' | 'ai-cli';
 
 const os = platform();
 
@@ -12,6 +12,7 @@ const typeLabel: Record<TerminalType, string> = {
   'claude-yolo': 'Claude',
   dev: 'Dev',
   shell: 'Shell',
+  'ai-cli': 'AI CLI',
 };
 
 function buildTitle(projectName: string, type: TerminalType): string {
@@ -126,7 +127,7 @@ function launchWindowsTerminal(projectPath: string, title: string, command?: str
   spawnDetached('wt.exe', args);
 }
 
-export async function launchTerminal(projectPath: string, type: TerminalType, projectName?: string): Promise<void> {
+export async function launchTerminal(projectPath: string, type: TerminalType, projectName?: string, commandOverride?: string): Promise<void> {
   const title = projectName ? buildTitle(projectName, type) : typeLabel[type];
 
   let command: string | undefined;
@@ -142,6 +143,9 @@ export async function launchTerminal(projectPath: string, type: TerminalType, pr
       break;
     case 'shell':
       command = undefined;
+      break;
+    case 'ai-cli':
+      command = commandOverride || undefined;
       break;
   }
 

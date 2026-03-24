@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, Wand2, Terminal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useClaudeStatus } from '@/hooks/useClaude'
 import { useTerminalStatus } from '@/hooks/useTerminal'
+import { useActiveProvider, useAiProviders } from '@/hooks/useAiProvider'
+import { useLaunchTerminal } from '@/hooks/useProjects'
 import { type Task } from '@/hooks/useTasks'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -17,31 +18,97 @@ interface TaskManagerDialogProps {
 }
 
 export function TaskManagerDialog({ projectId, tasks, open, onOpenChange }: TaskManagerDialogProps) {
-  const { data: claudeStatus } = useClaudeStatus()
   const { data: terminalStatus } = useTerminalStatus()
+  const { data: providers } = useAiProviders()
+  const activeProvider = useActiveProvider()
+  const launchTerminal = useLaunchTerminal()
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(false)
+  const [providerId, setProviderId] = useState<string | undefined>(activeProvider?.id)
 
-  const aiAvailable = claudeStatus?.configured || claudeStatus?.cliAvailable
   const hasIntegrated = terminalStatus?.available ?? false
+  const aiCliCommand = (() => {
+    try { return localStorage.getItem('shipyard:ai-cli-command') || '' } catch { return '' }
+  })()
+  const aiCliEnabled = (() => {
+    try { return localStorage.getItem('shipyard:ai-cli-enabled') === 'true' } catch { return false }
+  })()
+
+  useEffect(() => {
+    if (!providerId && activeProvider?.id) {
+      setProviderId(activeProvider.id)
+    }
+  }, [providerId, activeProvider?.id])
 
   const handleRunInCli = async () => {
     if (!rawText.trim()) return
-    if (!hasIntegrated) {
-      toast.error('Integrated terminal required for AI Task Manager')
-      return
-    }
     setLoading(true)
     try {
       const { prompt } = await api.getAiManagePrompt(projectId, rawText)
-      window.dispatchEvent(new CustomEvent('shipyard:open-terminal', {
-        detail: { projectId, type: 'ai-manage', prompt }
-      }))
-      toast.success('AI Task Manager started in terminal')
+      navigator.clipboard.writeText(prompt)
+      if (aiCliEnabled && aiCliCommand) {
+        if (hasIntegrated) {
+          window.dispatchEvent(new CustomEvent('shipyard:open-terminal', {
+            detail: { projectId, type: 'ai-cli', command: aiCliCommand }
+          }))
+        } else {
+          launchTerminal.mutate({ projectId, type: 'ai-cli', command: aiCliCommand })
+        }
+        toast.success('AI Task Manager opened in CLI — prompt copied to clipboard')
+      } else if (hasIntegrated) {
+        window.dispatchEvent(new CustomEvent('shipyard:open-terminal', {
+          detail: { projectId, type: 'ai-manage', prompt }
+        }))
+        toast.success('AI Task Manager started in terminal')
+      } else {
+        toast.error('Integrated terminal required for CLI mode')
+      }
       setRawText('')
       onOpenChange(false)
     } catch (err: any) {
       toast.error(err.message || 'Failed to start AI Task Manager')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRunInApp = async () => {
+    if (!rawText.trim()) return
+    if (!providerId) {
+      toast.error('Select an AI provider first')
+      return
+    }
+    setLoading(true)
+    try {
+      const existing = tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        status: t.status,
+        priority: t.priority,
+      }))
+      const result = await api.aiManageTasks(projectId, rawText, existing, providerId)
+      let created = 0
+      let updated = 0
+      let skipped = 0
+
+      for (const action of result.actions || []) {
+        if (action.type === 'create' && action.task) {
+          await api.createTask(projectId, action.task)
+          created++
+        } else if ((action.type === 'update' || action.type === 'update_task') && action.taskId && action.changes) {
+          await api.updateTask(projectId, action.taskId, action.changes)
+          updated++
+        } else {
+          skipped++
+        }
+      }
+
+      toast.success(`AI Task Manager: ${created} created, ${updated} updated, ${skipped} skipped`)
+      setRawText('')
+      onOpenChange(false)
+    } catch (err: any) {
+      toast.error(err.message || 'AI Task Manager failed')
     } finally {
       setLoading(false)
     }
@@ -84,29 +151,38 @@ export function TaskManagerDialog({ projectId, tasks, open, onOpenChange }: Task
             </p>
           )}
           <div className="flex items-center gap-2">
-            {aiAvailable && hasIntegrated ? (
-              <Button
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={handleRunInCli}
-                disabled={!rawText.trim() || loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Terminal className="h-3.5 w-3.5" />
-                )}
-                {loading ? 'Starting...' : 'Run in CLI'}
-              </Button>
-            ) : !aiAvailable ? (
-              <p className="text-xs text-muted-foreground">
-                Configure an AI provider in Settings to use AI features
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Integrated terminal required — install node-pty
-              </p>
-            )}
+            <select
+              value={providerId || ''}
+              onChange={e => setProviderId(e.target.value || undefined)}
+              className="h-7 text-xs bg-background border rounded px-1.5"
+              disabled={loading}
+            >
+              <option value="">Select provider</option>
+              {(providers || []).filter(p => p.configured).map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={handleRunInApp}
+              disabled={!rawText.trim() || loading || !providerId}
+            >
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+              {loading ? 'Running...' : 'Run with AI'}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={handleRunInCli}
+              disabled={!rawText.trim() || loading || (!hasIntegrated && !aiCliEnabled)}
+            >
+              <Terminal className="h-3.5 w-3.5" />
+              Run in CLI
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -4,7 +4,7 @@ import { getProjects, updateProject } from '../services/projectDiscovery.js';
 import * as log from '../services/logService.js';
 
 export async function terminalRoutes(app: FastifyInstance) {
-  app.post<{ Body: { projectId: string; type: TerminalType } }>(
+  app.post<{ Body: { projectId: string; type: TerminalType; command?: string } }>(
     '/api/terminals/launch',
     async (request, reply) => {
       const projects = await getProjects();
@@ -12,7 +12,7 @@ export async function terminalRoutes(app: FastifyInstance) {
       if (!project) return reply.status(404).send({ error: 'Project not found' });
 
       try {
-        await launchTerminal(project.path, request.body.type, project.name);
+        await launchTerminal(project.path, request.body.type, project.name, request.body.command);
         await updateProject(project.id, { lastOpenedAt: new Date().toISOString() });
         log.info('terminal', `Launched ${request.body.type} terminal`, project.name, project.id);
         return { success: true };

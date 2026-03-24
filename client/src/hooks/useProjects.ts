@@ -60,8 +60,8 @@ export function useUpdateProject() {
 
 export function useLaunchTerminal() {
   return useMutation({
-    mutationFn: ({ projectId, type }: { projectId: string; type: string }) =>
-      api.launchTerminal(projectId, type),
+    mutationFn: ({ projectId, type, command }: { projectId: string; type: string; command?: string }) =>
+      api.launchTerminal(projectId, type, command),
   })
 }
 

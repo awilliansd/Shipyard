@@ -101,7 +101,7 @@ export const api = {
     ),
 
   // Terminals (native launchers)
-  launchTerminal: (projectId: string, type: string) => request('/terminals/launch', { method: 'POST', body: JSON.stringify({ projectId, type }) }),
+  launchTerminal: (projectId: string, type: string, command?: string) => request('/terminals/launch', { method: 'POST', body: JSON.stringify({ projectId, type, command }) }),
   openFolder: (projectId: string) => request('/terminals/folder', { method: 'POST', body: JSON.stringify({ projectId }) }),
 
   // Integrated terminal
@@ -110,10 +110,10 @@ export const api = {
     request<{ sessions: { id: string; projectId: string; type: string; title: string; createdAt: string }[] }>(
       `/terminal/sessions${projectId ? `?projectId=${projectId}` : ''}`
     ),
-  createTerminalSession: (projectId: string, type = 'shell', cols = 80, rows = 24, taskId?: string, prompt?: string) =>
+  createTerminalSession: (projectId: string, type = 'shell', cols = 80, rows = 24, taskId?: string, prompt?: string, command?: string) =>
     request<{ id: string; projectId: string; type: string; title: string; createdAt: string; taskId?: string }>(
       '/terminal/sessions',
-      { method: 'POST', body: JSON.stringify({ projectId, type, cols, rows, ...(taskId ? { taskId } : {}), ...(prompt ? { prompt } : {}) }) }
+      { method: 'POST', body: JSON.stringify({ projectId, type, cols, rows, ...(taskId ? { taskId } : {}), ...(prompt ? { prompt } : {}), ...(command ? { command } : {}) }) }
     ),
   killTerminalSession: (sessionId: string) =>
     request('/terminal/sessions/' + sessionId, { method: 'DELETE' }),
@@ -158,6 +158,10 @@ export const api = {
   bulkOrganizeTasks: (projectId: string, rawText: string, providerId?: string) =>
     request<{ tasks: Array<{ title: string; description: string; prompt: string; priority: string; status: string }> }>(
       '/ai/bulk-organize', { method: 'POST', body: JSON.stringify({ projectId, rawText, providerId }) }
+    ),
+  aiManageTasks: (projectId: string, rawText: string, existingTasks: Array<{ id: string; title: string; description: string; status: string; priority: string }>, providerId?: string) =>
+    request<{ actions: Array<{ type: string; task?: any; taskId?: string; changes?: any; reason?: string; existingTaskId?: string }>; summary: string }>(
+      '/ai/manage-tasks', { method: 'POST', body: JSON.stringify({ projectId, rawText, existingTasks, providerId }) }
     ),
   assistantChat: (projectId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, providerId?: string, safeMode?: boolean) =>
     request<{ message: string; toolCalls: Array<{ name: string; args: Record<string, any>; ok: boolean; result?: any; error?: string }>; pendingToolCalls?: Array<{ name: string; args: Record<string, any>; preview?: string }> }>(

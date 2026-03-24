@@ -179,7 +179,31 @@ export async function aiRoutes(app: FastifyInstance) {
 
     const context = await buildProjectContext(projectId);
     const taskList = existingTasks.map(t => `  - [${t.id}] "${t.title}" (${t.status}, ${t.priority})`).join('\n');
-    const systemInstructions = `You are a task management AI... (system prompt omitted for brevity)`; // A more generic prompt would be built here
+    const systemInstructions = `
+You are a task management AI for Shipyard. You receive free-form user input and a list of existing tasks.
+
+Project context:
+${context}
+
+Existing tasks:
+${taskList || '(none)'}
+
+Return ONLY valid JSON with this shape:
+{
+  "actions": [
+    { "type": "create", "task": { "title": "...", "description": "...", "prompt": "...", "priority": "medium", "status": "todo" } },
+    { "type": "update", "taskId": "<TASK_ID>", "changes": { "status": "done" } },
+    { "type": "skip", "reason": "duplicate or irrelevant" }
+  ],
+  "summary": "short user-facing summary"
+}
+
+Rules:
+- Avoid duplicates: update existing tasks when appropriate instead of creating new ones.
+- If user says "mark all X as done", update matching tasks to status "done".
+- Priorities: urgent | high | medium | low. Status: backlog | todo | in_progress | done.
+- "description" is user-facing; "prompt" is technical details (files/approach).
+`;
     
     try {
       const result = await definition.implementation.manageTasks(config, systemInstructions, rawText);

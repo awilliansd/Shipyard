@@ -59,8 +59,8 @@ function buildAiContext(projectName: string, projectPath: string, projectId: str
   return lines.join('\n')
 }
 
-function openIntegratedTerminal(projectId: string, type: string) {
-  window.dispatchEvent(new CustomEvent('shipyard:open-terminal', { detail: { projectId, type } }))
+function openIntegratedTerminal(projectId: string, type: string, command?: string) {
+  window.dispatchEvent(new CustomEvent('shipyard:open-terminal', { detail: { projectId, type, ...(command ? { command } : {}) } }))
 }
 
 export function TerminalLauncher({ projectId, projectPath, projectName }: TerminalLauncherProps) {
@@ -76,6 +76,12 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const aiAvailable = claudeStatus?.configured || claudeStatus?.cliAvailable
   const isClaudeActive = claudeStatus?.providerId === 'claude'
   const activeProviderName = claudeStatus?.providerName || 'your AI assistant'
+  const aiCliCommand = (() => {
+    try { return localStorage.getItem('shipyard:ai-cli-command') || '' } catch { return '' }
+  })()
+  const aiCliEnabled = (() => {
+    try { return localStorage.getItem('shipyard:ai-cli-enabled') === 'true' } catch { return false }
+  })()
   const [taskManagerOpen, setTaskManagerOpen] = useState(false)
   const [skipPermissions, setSkipPermissions] = useState(() => {
     try { return localStorage.getItem('shipyard:skipPermissions') === 'true' } catch { return false }
@@ -95,6 +101,16 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
     if (!mcpActive && projectPath && projectName) {
       const context = buildAiContext(projectName, projectPath, projectId, tasks || [], settings?.tasksDir || '')
       navigator.clipboard.writeText(context)
+    }
+
+    if (aiCliEnabled && aiCliCommand) {
+      if (hasIntegrated) {
+        openIntegratedTerminal(projectId, 'ai-cli', aiCliCommand)
+      } else {
+        launchTerminal.mutate({ projectId, type: 'ai-cli', command: aiCliCommand })
+      }
+      toast.success(mcpActive ? 'AI CLI opened — MCP provides context' : 'AI CLI opened — context in clipboard, paste it')
+      return
     }
 
     // Only Claude has a local CLI integration right now.
