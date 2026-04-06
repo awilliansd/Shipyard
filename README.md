@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/awilliansd/Dockyard/releases/latest"><img src="https://img.shields.io/github/v/release/awilliansd/Dockyard?style=flat-square&label=download" alt="Download" /></a>
-  <a href="https://github.com/awilliansd/Dockyard"><img src="https://img.shields.io/github/stars/awilliansd/Dockyard?style=flat-square" alt="Stars" /></a>
+  <a href="https://github.com/awilliansd/dockyard/releases/latest"><img src="https://img.shields.io/github/v/release/awilliansd/dockyard?style=flat-square&label=download" alt="Download" /></a>
+  <a href="https://github.com/awilliansd/dockyard"><img src="https://img.shields.io/github/stars/awilliansd/dockyard?style=flat-square" alt="Stars" /></a>
   <img src="https://img.shields.io/badge/react-18-61dafb?style=flat-square&logo=react&logoColor=white" alt="React 18" />
   <img src="https://img.shields.io/badge/fastify-5-000000?style=flat-square&logo=fastify&logoColor=white" alt="Fastify 5" />
   <img src="https://img.shields.io/badge/typescript-5-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5" />
@@ -27,9 +27,9 @@
 ---
 
 <p align="center">
-  <a href="https://github.com/awilliansd/Dockyard/releases/latest"><img src="https://img.shields.io/badge/Windows-.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" /></a>&nbsp;
-  <a href="https://github.com/awilliansd/Dockyard/releases/latest"><img src="https://img.shields.io/badge/macOS-.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" /></a>&nbsp;
-  <a href="https://github.com/awilliansd/Dockyard/releases/latest"><img src="https://img.shields.io/badge/Linux-.AppImage | .deb-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" /></a>
+  <a href="https://github.com/awilliansd/dockyard/releases/latest"><img src="https://img.shields.io/badge/Windows-.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" /></a>&nbsp;
+  <a href="https://github.com/awilliansd/dockyard/releases/latest"><img src="https://img.shields.io/badge/macOS-.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" /></a>&nbsp;
+  <a href="https://github.com/awilliansd/dockyard/releases/latest"><img src="https://img.shields.io/badge/Linux-.AppImage | .deb-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" /></a>
 </p>
 
 <p align="center">
@@ -69,7 +69,7 @@
 
 ## Download
 
-Pre-built desktop installers are available on the [Releases](https://github.com/awilliansd/Dockyard/releases/latest) page:
+Pre-built desktop installers are available on the [Releases](https://github.com/awilliansd/dockyard/releases/latest) page:
 
 | Platform | File |
 |----------|------|
@@ -338,11 +338,11 @@ npx shadcn@latest add <component>
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=awilliansd%2FDockyard&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=awilliansd%2Fdockyard&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=awilliansd/Dockyard&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=awilliansd/Dockyard&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=awilliansd/Dockyard&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=awilliansd/dockyard&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=awilliansd/dockyard&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=awilliansd/dockyard&type=date&legend=top-left" />
  </picture>
 </a>
 
