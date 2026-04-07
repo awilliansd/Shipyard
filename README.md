@@ -41,7 +41,7 @@
 - **Local-first** -- runs entirely on `localhost`. No cloud services, no accounts, no telemetry. Your data stays on your machine as plain JSON files.
 - **Complements your editor** -- Dockyard is not an IDE. It sits alongside VS Code (or whatever you use) and gives you a bird's-eye view of all your projects, tasks, and git status in one place.
 - **Cross-platform** -- works on Linux, macOS, and Windows. Launches native terminals, file managers, and VS Code with one click.
-- **Multi-provider AI** -- bring your own key for **Claude**, **OpenAI**, **Gemini**, or run models locally with **Ollama**. AI powers chat, task analysis, bulk task creation, commit message generation, and an agentic assistant with file tools.
+- **Agentic AI & Terminals** -- Dockyard bridges the gap between your task list and your terminal. Launch **OpenClaude** with full project context or let AI manage your tasks directly.
 
 ## Features
 
@@ -51,9 +51,17 @@
 
 **Milestones** -- Group tasks into milestones for phased work. A virtual "General" milestone holds ungrouped tasks. Create, close, and reorder milestones per project.
 
-**Git Panel** -- Stage, unstage, commit, push, pull, view diffs, and browse commit history without leaving the browser. Live indicators show unpushed commits, unstaged changes, and untracked files. Supports **multi-repo projects** with sub-repository tabs. **AI-generated commit messages** -- one click to draft a commit message from your staged diff using any configured AI provider.
+**Integrated Terminal** -- Full-featured terminal in your browser powered by **xterm.js** and **node-pty**.
+- **Automated AI Injection**: Launch OpenClaude or other AI CLIs and Dockyard automatically detects when they are ready to receive a task-specific prompt.
+- **Context-Aware**: Prompts include project path, tech stack, current git branch, and detailed task instructions.
+- **Smart Detection**: Uses content-based and silence-based detection with retry logic to ensure prompts are injected only when the CLI is fully initialized.
+- **Native Fallback**: If `node-pty` is unavailable, Dockyard seamlessly falls back to launching native OS terminals (Windows Terminal, Terminal.app, gnome-terminal, etc.).
 
-**Terminal Integration** -- Launch Open Claude, dev servers, shells, VS Code, or your file manager with one click. Run terminals directly in the browser via xterm.js (requires `node-pty`). PowerShell on Windows, bash/zsh on Linux/macOS.
+**OpenClaude Integration** -- Deep support for [OpenClaude](https://github.com/OpenClaude/openclaude). Launch in normal or `--dangerously-skip-permissions` (YOLO) mode. Dockyard ensures a clean environment by unsetting conflicting variables and providing bracketed paste support for large prompt injections.
+
+**Git Panel** -- Stage, unstage, commit, push, pull, view diffs, and browse commit history without leaving the browser.
+- **Multi-repo support**: Automatically detects sub-repositories within a project (e.g., `client/` and `server/` folders with their own `.git`).
+- **AI Commit Messages**: One-click to draft a commit message from your staged diff using any configured AI provider.
 
 **Code Editor** -- Browse and edit project files with a CodeMirror-based editor, syntax highlighting, and tabbed interface. Preview diffs side-by-side before committing.
 
@@ -63,9 +71,9 @@
 
 | Provider | Key Required | Notes |
 |----------|:---:|-------|
-| Anthropic Claude | ✅ | claude-3-opus, sonnet, haiku |
-| OpenAI | ✅ | gpt-4o, gpt-4-turbo, gpt-3.5-turbo |
-| Google Gemini | ✅ | gemini-2.0-flash, gemini-1.5-pro/flash |
+| Anthropic Claude | ✅ | claude-3.5-sonnet, opus, haiku |
+| OpenAI | ✅ | gpt-4o, gpt-4-turbo |
+| Google Gemini | ✅ | gemini-2.0-flash, gemini-1.5-pro |
 | Ollama (local) | ❌ | Any model you've pulled locally |
 
 AI capabilities include:
@@ -78,9 +86,7 @@ AI capabilities include:
 
 All API keys are encrypted with AES-256-GCM on disk and never exposed to the browser.
 
-**Open Claude Integration** -- Launch Open Claude directly in the browser terminal. Supports normal mode and `--dangerously-skip-permissions` (YOLO) mode. AI Resolve sends a task prompt to Open Claude and auto-detects when the CLI is ready for input using content-based and silence-based detection with retry logic.
-
-**MCP Server** -- Expose Dockyard as a Model Context Protocol server. Claude Desktop, Claude Code, or any MCP client can list projects, manage tasks, and read git status. Secured with OAuth 2.1 + PKCE.
+**MCP Server** -- Expose Dockyard as a Model Context Protocol server. Claude Desktop, OpenClaude, or any MCP client can list projects, manage tasks, and read git status. Secured with OAuth 2.1 + PKCE.
 
 **Google Sheets Sync** -- Bidirectional sync of tasks with a Google Sheet via Apps Script. Auto-push on changes, auto-pull every 30 seconds, with per-task merge based on timestamps. No Google API keys needed.
 
@@ -131,7 +137,7 @@ Open [http://localhost:5421](http://localhost:5421).
 The setup scripts install dependencies and optionally create launch shortcuts:
 
 | OS | Command |
-|----|---------| 
+|----|---------|
 | Linux / macOS | `chmod +x setup.sh && ./setup.sh` |
 | Windows | `setup.cmd` |
 
@@ -206,9 +212,10 @@ On Windows, the integrated terminal uses PowerShell (better ConPTY support and r
 ## Stack
 
 | Layer | Technology |
-|-------|-----------| 
+|-------|-----------|
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui |
 | Backend | Fastify 5 + TypeScript (via tsx) |
+| Terminal | xterm.js + node-pty |
 | AI | Pluggable provider system (Claude, OpenAI, Gemini, Ollama) |
 | Editor | CodeMirror 6 |
 | Data | JSON files (no database) |
@@ -258,71 +265,6 @@ Sync a project's tasks bidirectionally with a Google Sheet using a free Apps Scr
 6. Copy the deployment URL
 7. In Dockyard, open a project and click the **Sheets** button in the task board header
 8. Paste the URL, click **Test**, then **Save**
-
-### Apps Script
-
-```javascript
-const HEADERS = ['id', 'title', 'description', 'priority', 'status', 'prompt', 'updatedAt'];
-
-function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) || 'read';
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-
-  if (action === 'ping') {
-    return jsonResp({ ok: true, rows: Math.max(0, sheet.getLastRow() - 1) });
-  }
-
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return jsonResp({ tasks: [] });
-
-  var headers = data[0].map(function(h) { return String(h).toLowerCase().trim(); });
-  var tasks = [];
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    if (!row.some(function(c) { return String(c).trim(); })) continue;
-    var task = {};
-    headers.forEach(function(h, idx) { task[h] = String(row[idx] || ''); });
-    if (task.title) tasks.push(task);
-  }
-  return jsonResp({ tasks: tasks });
-}
-
-function doPost(e) {
-  try {
-    var payload = JSON.parse(e.postData.contents);
-    var tasks = payload.tasks || [];
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    sheet.clear();
-    sheet.appendRow(HEADERS);
-    for (var i = 0; i < tasks.length; i++) {
-      var t = tasks[i];
-      sheet.appendRow(HEADERS.map(function(h) { return t[h] || ''; }));
-    }
-    if (HEADERS.length > 0) sheet.autoResizeColumns(1, HEADERS.length);
-    return jsonResp({ success: true, updated: tasks.length });
-  } catch (err) {
-    return jsonResp({ error: err.message });
-  }
-}
-
-function jsonResp(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-// Auto-update updatedAt when editing cells manually
-function onEdit(e) {
-  var sheet = e.source.getActiveSheet();
-  var row = e.range.getRow();
-  if (row < 2) return;
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var col = headers.indexOf('updatedAt');
-  if (col === -1) return;
-  if (e.range.getColumn() === col + 1) return;
-  sheet.getRange(row, col + 1).setValue(new Date().toISOString());
-}
-```
 
 ### How Sync Works
 
@@ -404,7 +346,7 @@ dockyard/
 | **Tasks** | `GET /api/tasks/all`, `GET/POST /:id/tasks`, `PUT/DELETE /:id/tasks/:tid`, `POST /:id/tasks/reorder`, `POST /:id/tasks/replace` |
 | **Git** | `GET /:id/git/status\|diff\|log\|branches`, `POST /:id/git/stage\|stage-all\|unstage\|commit\|push\|pull\|discard\|discard-all`, `POST /:id/git/generate-commit-message` (all accept optional `subrepo` param) |
 | **Files** | `GET /:id/files/tree\|content`, `PUT /:id/files/content`, `DELETE /:id/files`, `POST /:id/files/open-folder` |
-| **AI** | `GET /api/ai/providers`, `POST /api/ai/config\|config/test\|chat(SSE)\|analyze-task\|bulk-organize\|manage-tasks\|assistant` , `DELETE /api/ai/config` |
+| **AI** | `GET /api/ai/providers`, `POST /api/ai/config\|config/test\|chat(SSE)\|analyze-task\|bulk-organize\|manage-tasks\|assistant`, `DELETE /api/ai/config` |
 | **Terminals** | `POST /api/terminals/launch\|folder` (native), `GET/POST/DELETE /api/terminal/sessions` (integrated), `WS /ws/terminal/:id` |
 | **MCP** | `POST /mcp` (JSON-RPC), `GET /mcp` (SSE), OAuth at `/register`, `/authorize`, `/token` |
 | **Sync** | `POST /api/sync/proxy\|test` (stateless Google Sheets proxy) |
