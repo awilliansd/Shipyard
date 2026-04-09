@@ -3,11 +3,11 @@ import { Loader2, Wand2, Terminal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useClaudeStatus } from '@/hooks/useClaude'
 import { useTerminalStatus } from '@/hooks/useTerminal'
 import { type Task } from '@/hooks/useTasks'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 
 interface TaskManagerDialogProps {
   projectId: string
@@ -17,12 +17,12 @@ interface TaskManagerDialogProps {
 }
 
 export function TaskManagerDialog({ projectId, tasks, open, onOpenChange }: TaskManagerDialogProps) {
-  const { data: claudeStatus } = useClaudeStatus()
   const { data: terminalStatus } = useTerminalStatus()
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const aiAvailable = claudeStatus?.configured || claudeStatus?.cliAvailable
+  const aiAvailable = true
   const hasIntegrated = terminalStatus?.available ?? false
 
   const handleRunInCli = async () => {
@@ -35,8 +35,9 @@ export function TaskManagerDialog({ projectId, tasks, open, onOpenChange }: Task
     try {
       const { prompt } = await api.getAiManagePrompt(projectId, rawText)
       const skipPermissions = localStorage.getItem('dockyard:skipPermissions') === 'true'
+      const runtime = settings?.aiCliRuntime || 'openclaude'
       window.dispatchEvent(new CustomEvent('dockyard:open-terminal', {
-        detail: { projectId, type: 'ai-manage', prompt, skipPermissions }
+        detail: { projectId, type: 'ai-manage', prompt, skipPermissions, runtime }
       }))
       toast.success('AI Task Manager started in terminal')
       setRawText('')

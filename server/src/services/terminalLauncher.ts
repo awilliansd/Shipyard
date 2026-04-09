@@ -2,17 +2,40 @@ import { spawn, execFileSync } from 'child_process';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { platform } from 'os';
+import { getSettings } from './settingsStore.js';
 
-export type TerminalType = 'claude' | 'claude-yolo' | 'dev' | 'shell';
+export type TerminalType = 'claude' | 'claude-yolo' | 'assistant' | 'assistant-yolo' | 'dev' | 'shell';
+type AiCliRuntime = 'openclaude' | 'codex' | 'gemini';
 
 const os = platform();
 
 const typeLabel: Record<TerminalType, string> = {
   claude: 'Open Claude',
   'claude-yolo': 'Open Claude',
+  assistant: 'AI Assistant',
+  'assistant-yolo': 'AI Assistant',
   dev: 'Dev',
   shell: 'Shell',
 };
+
+function normalizeRuntime(runtime?: string): AiCliRuntime {
+  if (runtime === 'openclaude' || runtime === 'codex' || runtime === 'gemini') return runtime;
+  const configured = getSettings().aiCliRuntime;
+  if (configured === 'openclaude' || configured === 'codex' || configured === 'gemini') return configured;
+  return 'openclaude';
+}
+
+function runtimeLabel(runtime: AiCliRuntime): string {
+  if (runtime === 'codex') return 'Codex';
+  if (runtime === 'gemini') return 'Gemini';
+  return 'Open Claude';
+}
+
+function buildAssistantCommand(runtime: AiCliRuntime, useSkip: boolean): string {
+  if (runtime === 'codex') return 'codex';
+  if (runtime === 'gemini') return 'gemini';
+  return useSkip ? 'openclaude --dangerously-skip-permissions' : 'openclaude';
+}
 
 function buildTitle(projectName: string, type: TerminalType): string {
   const label = typeLabel[type];
@@ -126,16 +149,25 @@ function launchWindowsTerminal(projectPath: string, title: string, command?: str
   spawnDetached('wt.exe', args);
 }
 
-export async function launchTerminal(projectPath: string, type: TerminalType, projectName?: string): Promise<void> {
-  const title = projectName ? buildTitle(projectName, type) : typeLabel[type];
+export async function launchTerminal(
+  projectPath: string,
+  type: TerminalType,
+  projectName?: string,
+  options?: { runtime?: string; skipPermissions?: boolean },
+): Promise<void> {
+  const runtime = normalizeRuntime(options?.runtime);
+  const useSkip = options?.skipPermissions ?? (type === 'claude-yolo' || type === 'assistant-yolo');
+  const isAssistantType = type === 'claude' || type === 'claude-yolo' || type === 'assistant' || type === 'assistant-yolo';
+  const titleBase = isAssistantType ? runtimeLabel(runtime) : typeLabel[type];
+  const title = projectName ? buildTitle(projectName, type).replace(typeLabel[type], titleBase) : titleBase;
 
   let command: string | undefined;
   switch (type) {
     case 'claude':
-      command = 'openclaude';
-      break;
     case 'claude-yolo':
-      command = 'openclaude --dangerously-skip-permissions';
+    case 'assistant':
+    case 'assistant-yolo':
+      command = buildAssistantCommand(runtime, useSkip);
       break;
     case 'dev':
       command = (await detectDevCommand(projectPath)) || undefined;
@@ -146,19 +178,16 @@ export async function launchTerminal(projectPath: string, type: TerminalType, pr
   }
 
   if (os === 'linux') {
-    // Linux: prefix openclaude commands with env clear
-    if (type === 'claude') command = 'unset CLAUDECODE && openclaude';
-    else if (type === 'claude-yolo') command = 'unset CLAUDECODE && openclaude --dangerously-skip-permissions';
+    // Linux: clear CLAUDECODE only for OpenClaude runtime
+    if (isAssistantType && runtime === 'openclaude' && command) command = `unset CLAUDECODE && ${command}`;
     launchLinuxTerminal(projectPath, title, command);
   } else if (os === 'darwin') {
-    // macOS: prefix openclaude commands with env clear
-    if (type === 'claude') command = 'unset CLAUDECODE && openclaude';
-    else if (type === 'claude-yolo') command = 'unset CLAUDECODE && openclaude --dangerously-skip-permissions';
+    // macOS: clear CLAUDECODE only for OpenClaude runtime
+    if (isAssistantType && runtime === 'openclaude' && command) command = `unset CLAUDECODE && ${command}`;
     launchMacTerminal(projectPath, title, command);
   } else {
-    // Windows: prefix openclaude commands with env clear
-    if (type === 'claude') command = 'set CLAUDECODE= && openclaude';
-    else if (type === 'claude-yolo') command = 'set CLAUDECODE= && openclaude --dangerously-skip-permissions';
+    // Windows: clear CLAUDECODE only for OpenClaude runtime
+    if (isAssistantType && runtime === 'openclaude' && command) command = `set CLAUDECODE= && ${command}`;
     launchWindowsTerminal(projectPath, title, command);
   }
 }

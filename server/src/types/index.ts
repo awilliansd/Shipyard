@@ -76,6 +76,8 @@ export interface Settings {
   selectedProjects: string[];
   // If true, AI may auto-commit, but never on protected branches (main/develop/master)
   aiAutoCommitEnabled: boolean;
+  // Which CLI runtime to launch for terminal-based AI workflows
+  aiCliRuntime: 'openclaude' | 'codex' | 'gemini';
 }
 
 // ── Claude API Integration ──────────────────────────────

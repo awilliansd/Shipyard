@@ -4,6 +4,7 @@ export interface AppSettings {
   tasksDir: string;
   selectedProjects: string[];
   aiAutoCommitEnabled: boolean;
+  aiCliRuntime: 'openclaude' | 'codex' | 'gemini';
 }
 
 interface RequestOptions extends RequestInit {
@@ -111,7 +112,16 @@ export const api = {
     ),
 
   // Terminals (native launchers)
-  launchTerminal: (projectId: string, type: string) => request('/terminals/launch', { method: 'POST', body: JSON.stringify({ projectId, type }) }),
+  launchTerminal: (projectId: string, type: string, runtime?: 'openclaude' | 'codex' | 'gemini', skipPermissions?: boolean) =>
+    request('/terminals/launch', {
+      method: 'POST',
+      body: JSON.stringify({
+        projectId,
+        type,
+        ...(runtime ? { runtime } : {}),
+        ...(skipPermissions !== undefined ? { skipPermissions } : {}),
+      }),
+    }),
   openFolder: (projectId: string) => request('/terminals/folder', { method: 'POST', body: JSON.stringify({ projectId }) }),
 
   // Integrated terminal
@@ -120,10 +130,10 @@ export const api = {
     request<{ sessions: { id: string; projectId: string; type: string; title: string; createdAt: string }[] }>(
       `/terminal/sessions${projectId ? `?projectId=${projectId}` : ''}`
     ),
-  createTerminalSession: (projectId: string, type = 'shell', cols = 80, rows = 24, taskId?: string, prompt?: string, skipPermissions?: boolean) =>
+  createTerminalSession: (projectId: string, type = 'shell', cols = 80, rows = 24, taskId?: string, prompt?: string, skipPermissions?: boolean, runtime?: 'openclaude' | 'codex' | 'gemini') =>
     request<{ id: string; projectId: string; type: string; title: string; createdAt: string; taskId?: string }>(
       '/terminal/sessions',
-      { method: 'POST', body: JSON.stringify({ projectId, type, cols, rows, ...(taskId ? { taskId } : {}), ...(prompt ? { prompt } : {}), ...(skipPermissions !== undefined ? { skipPermissions } : {}) }) }
+      { method: 'POST', body: JSON.stringify({ projectId, type, cols, rows, ...(taskId ? { taskId } : {}), ...(prompt ? { prompt } : {}), ...(skipPermissions !== undefined ? { skipPermissions } : {}), ...(runtime ? { runtime } : {}) }) }
     ),
   killTerminalSession: (sessionId: string) =>
     request('/terminal/sessions/' + sessionId, { method: 'DELETE' }),
@@ -145,7 +155,7 @@ export const api = {
 
   // Settings
   getSettings: () => request<AppSettings>('/settings'),
-  saveSettings: (data: Partial<Pick<AppSettings, 'aiAutoCommitEnabled'>>) =>
+  saveSettings: (data: Partial<Pick<AppSettings, 'aiAutoCommitEnabled' | 'aiCliRuntime'>>) =>
     request<AppSettings>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Browse filesystem
