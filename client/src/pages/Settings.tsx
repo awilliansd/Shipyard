@@ -170,7 +170,7 @@ export function Settings() {
   })
 
   const saveSettingsMutation = useMutation({
-    mutationFn: (data: { aiAutoCommitEnabled: boolean }) => api.saveSettings(data),
+    mutationFn: (data: { aiAutoCommitEnabled?: boolean; aiCliRuntime?: 'openclaude' | 'codex' | 'gemini' }) => api.saveSettings(data),
     onSuccess: (nextSettings) => {
       queryClient.setQueryData(['settings'], nextSettings)
       queryClient.invalidateQueries({ queryKey: ['settings'] })
@@ -213,6 +213,17 @@ export function Settings() {
       {
         onSuccess: () => {
           toast.success(nextValue ? 'AI auto-commit enabled for non-protected branches' : 'AI auto-commit disabled')
+        },
+      }
+    )
+  }
+
+  const handleChangeAiRuntime = (runtime: 'openclaude' | 'codex' | 'gemini') => {
+    saveSettingsMutation.mutate(
+      { aiCliRuntime: runtime },
+      {
+        onSuccess: () => {
+          toast.success(`AI CLI runtime set to ${runtime === 'openclaude' ? 'OpenClaude' : runtime === 'codex' ? 'Codex CLI' : 'Gemini CLI'}`)
         },
       }
     )
@@ -444,6 +455,28 @@ export function Settings() {
                       )} />
                     </div>
                   </button>
+
+                  <div className="flex items-center justify-between w-full px-3 py-2.5 rounded-md border">
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="h-4 w-4 text-muted-foreground" />
+                      <div className="text-left">
+                        <span className="text-sm font-medium">AI CLI runtime</span>
+                        <p className="text-xs text-muted-foreground">
+                          Choose which local CLI opens for AI actions (launcher, AI resolve, task manager).
+                        </p>
+                      </div>
+                    </div>
+                    <select
+                      value={settings?.aiCliRuntime || 'openclaude'}
+                      onChange={e => handleChangeAiRuntime(e.target.value as 'openclaude' | 'codex' | 'gemini')}
+                      className="h-8 text-xs bg-background border rounded px-2 outline-none"
+                      disabled={saveSettingsMutation.isPending}
+                    >
+                      <option value="openclaude">OpenClaude</option>
+                      <option value="codex">Codex CLI</option>
+                      <option value="gemini">Gemini CLI</option>
+                    </select>
+                  </div>
                 </CardContent>
               </Card>
             </>

@@ -6,7 +6,6 @@ import { useLaunchTerminal, useOpenFolder } from '@/hooks/useProjects'
 import { useTerminalStatus } from '@/hooks/useTerminal'
 import { useTasks, type Task } from '@/hooks/useTasks'
 import { useMcpStatus } from '@/hooks/useMcp'
-import { useClaudeStatus } from '@/hooks/useClaude'
 import { TaskManagerDialog } from '@/components/tasks/TaskManagerDialog'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -59,8 +58,19 @@ function buildAiContext(projectName: string, projectPath: string, projectId: str
   return lines.join('\n')
 }
 
-function openIntegratedTerminal(projectId: string, type: string, skipPermissions?: boolean) {
-  window.dispatchEvent(new CustomEvent('dockyard:open-terminal', { detail: { projectId, type, skipPermissions } }))
+function runtimeName(runtime: 'openclaude' | 'codex' | 'gemini') {
+  if (runtime === 'codex') return 'Codex CLI'
+  if (runtime === 'gemini') return 'Gemini CLI'
+  return 'OpenClaude'
+}
+
+function openIntegratedTerminal(
+  projectId: string,
+  type: string,
+  skipPermissions?: boolean,
+  runtime?: 'openclaude' | 'codex' | 'gemini',
+) {
+  window.dispatchEvent(new CustomEvent('dockyard:open-terminal', { detail: { projectId, type, skipPermissions, runtime } }))
 }
 
 export function TerminalLauncher({ projectId, projectPath, projectName }: TerminalLauncherProps) {
@@ -71,17 +81,15 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
   const { data: tasks } = useTasks(projectId)
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   const { data: mcpStatus } = useMcpStatus()
-  const { data: claudeStatus } = useClaudeStatus()
   const mcpActive = mcpStatus?.enabled ?? false
-  const aiAvailable = claudeStatus?.configured || claudeStatus?.cliAvailable
-  const isClaudeActive = true
-  const activeProviderName = 'Claude'
+  const aiRuntime = settings?.aiCliRuntime || 'openclaude'
+  const activeProviderName = runtimeName(aiRuntime)
   const [taskManagerOpen, setTaskManagerOpen] = useState(false)
   const [skipPermissions, setSkipPermissions] = useState(() => {
     try { return localStorage.getItem('dockyard:skipPermissions') === 'true' } catch { return false }
   })
 
-  const assistantType = skipPermissions ? 'claude-yolo' : 'claude'
+  const assistantType = 'assistant'
 
   const handleCopyContext = () => {
     if (!projectPath || !projectName) return
@@ -97,27 +105,17 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
       navigator.clipboard.writeText(context)
     }
 
-    // Only Claude has a local CLI integration right now.
-    if (!isClaudeActive) {
-      toast.success(
-        mcpActive
-          ? `MCP enabled — open ${activeProviderName} to connect`
-          : `Context copied — open ${activeProviderName} and paste it`
-      )
-      return
-    }
-
     if (hasIntegrated) {
-      openIntegratedTerminal(projectId, assistantType, skipPermissions)
+      openIntegratedTerminal(projectId, assistantType, skipPermissions, aiRuntime)
     } else {
-      launchTerminal.mutate({ projectId, type: assistantType })
+      launchTerminal.mutate({ projectId, type: assistantType, runtime: aiRuntime, skipPermissions })
     }
     toast.success(mcpActive ? 'AI assistant opened — MCP provides context' : 'AI assistant opened — context in clipboard, paste it')
   }
 
   const launch = (type: string, label: string) => {
     if (hasIntegrated) {
-      openIntegratedTerminal(projectId, type)
+      openIntegratedTerminal(projectId, type, undefined, aiRuntime)
     } else {
       launchTerminal.mutate({ projectId, type }, { onSuccess: () => toast.success(`Launched ${label}`) })
     }
@@ -137,7 +135,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
 
       {/* Primary actions */}
       <div className="space-y-1">
-        {aiAvailable && (
+        {(
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="default" className="w-full justify-start gap-2 h-8 text-xs" onClick={() => setTaskManagerOpen(true)}>
@@ -156,16 +154,16 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
         {projectPath && projectName && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant={aiAvailable ? "outline" : "default"} className="w-full justify-start gap-2 h-8 text-xs" onClick={handleLaunchAssistant}>
+              <Button variant="outline" className="w-full justify-start gap-2 h-8 text-xs" onClick={handleLaunchAssistant}>
                 <Sparkles className="h-3.5 w-3.5" />
-                {mcpActive ? 'Open Claude' : 'Open Claude + Copy Context'}
+                {mcpActive ? `Open ${activeProviderName}` : `Open ${activeProviderName} + Copy Context`}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
               <p className="max-w-[200px] text-xs">
                 {mcpActive
-                  ? 'Opens Open Claude — MCP gives it access to projects and tasks automatically'
-                  : 'Copies project info + tasks to clipboard, then opens Open Claude. Just paste to give context.'
+                  ? `Opens ${activeProviderName} — MCP gives it access to projects and tasks automatically`
+                  : `Copies project info + tasks to clipboard, then opens ${activeProviderName}. Paste to provide context.`
                 }
               </p>
             </TooltipContent>
@@ -216,7 +214,7 @@ export function TerminalLauncher({ projectId, projectPath, projectName }: Termin
         )}
 
         {/* Skip permissions */}
-        {projectPath && isClaudeActive && (
+        {projectPath && aiRuntime === 'openclaude' && (
           <Tooltip>
             <TooltipTrigger asChild>
               <label className="ml-auto flex items-center cursor-pointer select-none">

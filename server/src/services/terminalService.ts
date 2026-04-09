@@ -2,6 +2,7 @@ import { platform } from 'os';
 import { nanoid } from 'nanoid';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { getSettings } from './settingsStore.js';
 
 const os = platform();
 
@@ -17,7 +18,7 @@ try {
 export interface TerminalSession {
   id: string;
   projectId: string;
-  type: string; // 'shell' | 'dev' | 'claude' | 'ai-resolve'
+  type: string; // 'shell' | 'dev' | 'assistant' | 'ai-resolve' | 'ai-manage'
   title: string;
   pty: import('node-pty').IPty;
   createdAt: string;
@@ -27,6 +28,27 @@ export interface TerminalSession {
 }
 
 const sessions = new Map<string, TerminalSession>();
+
+type AiCliRuntime = 'openclaude' | 'codex' | 'gemini';
+
+function normalizeRuntime(runtime?: string): AiCliRuntime {
+  if (runtime === 'codex' || runtime === 'gemini' || runtime === 'openclaude') return runtime;
+  const configured = getSettings().aiCliRuntime;
+  if (configured === 'codex' || configured === 'gemini' || configured === 'openclaude') return configured;
+  return 'openclaude';
+}
+
+function getRuntimeLabel(runtime: AiCliRuntime): string {
+  if (runtime === 'codex') return 'Codex';
+  if (runtime === 'gemini') return 'Gemini';
+  return 'Open Claude';
+}
+
+function buildAssistantCommand(runtime: AiCliRuntime, useSkip: boolean): string {
+  if (runtime === 'codex') return 'codex';
+  if (runtime === 'gemini') return 'gemini';
+  return useSkip ? 'openclaude --dangerously-skip-permissions' : 'openclaude';
+}
 
 export function isAvailable(): boolean {
   return nodePty !== null;
@@ -62,6 +84,7 @@ export async function createSession(
   taskId?: string,
   prompt?: string,
   skipPermissions?: boolean,
+  runtime?: string,
 ): Promise<string | null> {
   if (!nodePty) return null;
 
@@ -80,25 +103,27 @@ export async function createSession(
   // Build initial command based on type
   let shellArgs: string[] = [];
   let initialCommand: string | null = null;
+  const aiRuntime = normalizeRuntime(runtime);
+  const isAgentType = type === 'assistant' || type === 'ai-resolve' || type === 'ai-manage';
 
   // Determine if we should use skip permissions flag
-  const useSkip = skipPermissions ?? (type === 'claude-yolo' || type === 'ai-resolve' || type === 'ai-manage');
+  const useSkip = skipPermissions ?? (type === 'ai-resolve' || type === 'ai-manage');
 
   if (os === 'win32') {
     // Windows: PowerShell with -NoLogo for cleaner startup
     shellArgs = ['-NoLogo'];
-    if (type === 'claude' || type === 'claude-yolo' || type === 'ai-resolve' || type === 'ai-manage') {
-      env['CLAUDECODE'] = '';
-      initialCommand = useSkip ? 'openclaude --dangerously-skip-permissions' : 'openclaude';
+    if (isAgentType) {
+      if (aiRuntime === 'openclaude') env['CLAUDECODE'] = '';
+      initialCommand = buildAssistantCommand(aiRuntime, useSkip);
     } else if (type === 'dev') {
       initialCommand = await detectDevCommand(projectPath);
     }
   } else {
     // Linux/macOS: interactive login shell (enables readline + history)
     shellArgs = ['-il'];
-    if (type === 'claude' || type === 'claude-yolo' || type === 'ai-resolve' || type === 'ai-manage') {
-      env['CLAUDECODE'] = '';
-      initialCommand = useSkip ? 'openclaude --dangerously-skip-permissions' : 'openclaude';
+    if (isAgentType) {
+      if (aiRuntime === 'openclaude') env['CLAUDECODE'] = '';
+      initialCommand = buildAssistantCommand(aiRuntime, useSkip);
     } else if (type === 'dev') {
       initialCommand = await detectDevCommand(projectPath);
     }
@@ -108,7 +133,13 @@ export async function createSession(
   const shortName = projectName && projectName.length > maxLen
     ? projectName.slice(0, maxLen - 3) + '...'
     : projectName || projectId;
-  const typeLabels: Record<string, string> = { claude: 'Open Claude', 'claude-yolo': 'Open Claude', dev: 'Dev', shell: 'Shell', 'ai-resolve': 'AI', 'ai-manage': 'AI Tasks' };
+  const typeLabels: Record<string, string> = {
+    assistant: getRuntimeLabel(aiRuntime),
+    dev: 'Dev',
+    shell: 'Shell',
+    'ai-resolve': `AI (${getRuntimeLabel(aiRuntime)})`,
+    'ai-manage': `AI Tasks (${getRuntimeLabel(aiRuntime)})`,
+  };
   const title = `[${shortName}] ${typeLabels[type] || 'Shell'}`;
 
   const spawnOptions: Record<string, any> = {
@@ -149,7 +180,7 @@ export async function createSession(
   }
 
   // For AI resolve/manage sessions: inject prompt when Claude CLI is ready
-  if (prompt && (type === 'ai-resolve' || type === 'ai-manage' || type === 'claude-yolo')) {
+  if (prompt && (type === 'ai-resolve' || type === 'ai-manage')) {
     injectPromptWhenReady(id, prompt);
   }
 

@@ -60,8 +60,13 @@ export function useUpdateProject() {
 
 export function useLaunchTerminal() {
   return useMutation({
-    mutationFn: ({ projectId, type }: { projectId: string; type: string }) =>
-      api.launchTerminal(projectId, type),
+    mutationFn: ({ projectId, type, runtime, skipPermissions }: {
+      projectId: string
+      type: string
+      runtime?: 'openclaude' | 'codex' | 'gemini'
+      skipPermissions?: boolean
+    }) =>
+      api.launchTerminal(projectId, type, runtime, skipPermissions),
   })
 }
 
