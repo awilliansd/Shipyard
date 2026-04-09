@@ -3,10 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FolderBrowser } from '@/components/ui/folder-browser'
-import { SyncSettingsCard } from '@/components/sync/SyncSettingsCard'
-import { ClaudeSettingsCard } from '@/components/claude/ClaudeSettingsCard'
-import { McpSettingsCard } from '@/components/mcp/McpSettingsCard'
-import { FolderPlus, Plus, FolderOpen, Check, Loader2, GitBranch, X, FolderSearch, Download, Upload, Volume2, VolumeX, Sparkles, Server, Cloud, Database } from 'lucide-react'
+import { FolderPlus, Plus, FolderOpen, Check, Loader2, GitBranch, X, FolderSearch, Download, Upload, Volume2, VolumeX, Sparkles, Database, SlidersHorizontal } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useProjects } from '@/hooks/useProjects'
 import { useAllTasks, useImportAllTasks } from '@/hooks/useTasks'
@@ -229,13 +226,12 @@ export function Settings() {
     )
   }
 
-  type SectionId = 'projects' | 'preferences' | 'ai' | 'data'
+  type SectionId = 'projects' | 'preferences' | 'data'
   const [activeSection, setActiveSection] = useState<SectionId>('projects')
 
   const sections: { id: SectionId; label: string; icon: React.ReactNode }[] = [
     { id: 'projects', label: 'Projects', icon: <FolderOpen className="h-4 w-4" /> },
-    { id: 'preferences', label: 'Preferences', icon: <Volume2 className="h-4 w-4" /> },
-    { id: 'ai', label: 'AI & Integrations', icon: <Sparkles className="h-4 w-4" /> },
+    { id: 'preferences', label: 'Preferences', icon: <SlidersHorizontal className="h-4 w-4" /> },
     { id: 'data', label: 'Data', icon: <Database className="h-4 w-4" /> },
   ]
 
@@ -399,11 +395,48 @@ export function Settings() {
             <>
               <div>
                 <h2 className="text-sm font-semibold">Preferences</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Customize behavior and notifications.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Configure AI runtime and workspace preferences.</p>
               </div>
 
               <Card>
                 <CardContent className="pt-5 space-y-2.5">
+                  <div className="w-full px-3 py-3 rounded-md border border-primary/30 bg-primary/5">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="h-4 w-4 text-primary mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">AI CLI Runtime (Primary)</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          This is the main AI engine used by launcher, AI resolve, and AI task manager.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+                      {[
+                        { value: 'openclaude' as const, title: 'OpenClaude', desc: 'Best with skip confirmations mode' },
+                        { value: 'codex' as const, title: 'Codex CLI', desc: 'Use your ChatGPT/Codex CLI workflow' },
+                        { value: 'gemini' as const, title: 'Gemini CLI', desc: 'Use your Gemini CLI workflow' },
+                      ].map(opt => {
+                        const selected = (settings?.aiCliRuntime || 'openclaude') === opt.value
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={() => handleChangeAiRuntime(opt.value)}
+                            disabled={saveSettingsMutation.isPending}
+                            className={cn(
+                              'text-left rounded-md border px-3 py-2 transition-colors',
+                              selected
+                                ? 'border-primary bg-primary/10'
+                                : 'border-border hover:bg-accent/50'
+                            )}
+                          >
+                            <p className="text-xs font-semibold">{opt.title}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
                   <button
                     onClick={() => {
                       const next = !soundOn
@@ -456,42 +489,8 @@ export function Settings() {
                     </div>
                   </button>
 
-                  <div className="flex items-center justify-between w-full px-3 py-2.5 rounded-md border">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-left">
-                        <span className="text-sm font-medium">AI CLI runtime</span>
-                        <p className="text-xs text-muted-foreground">
-                          Choose which local CLI opens for AI actions (launcher, AI resolve, task manager).
-                        </p>
-                      </div>
-                    </div>
-                    <select
-                      value={settings?.aiCliRuntime || 'openclaude'}
-                      onChange={e => handleChangeAiRuntime(e.target.value as 'openclaude' | 'codex' | 'gemini')}
-                      className="h-8 text-xs bg-background border rounded px-2 outline-none"
-                      disabled={saveSettingsMutation.isPending}
-                    >
-                      <option value="openclaude">OpenClaude</option>
-                      <option value="codex">Codex CLI</option>
-                      <option value="gemini">Gemini CLI</option>
-                    </select>
-                  </div>
                 </CardContent>
               </Card>
-            </>
-          )}
-
-          {activeSection === 'ai' && (
-            <>
-              <div>
-                <h2 className="text-sm font-semibold">AI & Integrations</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Configure AI providers, MCP server, and sync providers.</p>
-              </div>
-
-              <ClaudeSettingsCard />
-              <McpSettingsCard />
-              <SyncSettingsCard projects={projects || []} />
             </>
           )}
 

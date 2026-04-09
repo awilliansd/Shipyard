@@ -187,7 +187,15 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ projectId, messages, providerId }) , timeout: 120_000 }
     ),
 
-  // Claude AI (Legacy - backward compatibility)
+  // AI status/config (uses legacy backend endpoints for compatibility)
+  getAiStatus: () => request<{ configured: boolean; cliAvailable: boolean; envKeyAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
+  saveAiApiConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
+    request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),
+  deleteAiApiConfig: () => request<{ ok: boolean }>('/claude/config', { method: 'DELETE' }),
+  testAiApiKey: (apiKey: string) =>
+    request<{ ok: boolean; error?: string }>('/claude/config/test', { method: 'POST', body: JSON.stringify({ apiKey }) }),
+
+  // Legacy aliases
   getClaudeStatus: () => request<{ configured: boolean; cliAvailable: boolean; envKeyAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
   saveClaudeConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
     request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),

@@ -3,7 +3,7 @@ import { Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useGitCommit, useGitPush, useGenerateCommitMessage } from '@/hooks/useGit'
-import { useClaudeStatus } from '@/hooks/useClaude'
+import { useAiStatus } from '@/hooks/useAi'
 import { toast } from 'sonner'
 import { playAiCompleteSound } from '@/lib/sounds'
 
@@ -18,9 +18,9 @@ export function CommitForm({ projectId, hasStagedChanges, subrepo }: CommitFormP
   const gitCommit = useGitCommit()
   const gitPush = useGitPush()
   const generateMsg = useGenerateCommitMessage()
-  const { data: claudeStatus } = useClaudeStatus()
+  const { data: aiStatus } = useAiStatus()
 
-  const aiAvailable = claudeStatus?.cliAvailable || claudeStatus?.configured || claudeStatus?.envKeyAvailable
+  const aiAvailable = aiStatus?.cliAvailable || aiStatus?.configured || aiStatus?.envKeyAvailable
   const isBusy = gitCommit.isPending || gitPush.isPending
 
   const handleGenerate = () => {
