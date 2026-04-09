@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import { useCreateTask, useUpdateTask, useDeleteTask, type Task } from '@/hooks/useTasks'
 import { buildTaskPrompt } from '@/lib/promptBuilder'
 import { useAiSessions } from '@/hooks/useAiSessions'
-import { useClaudeStatus } from '@/hooks/useClaude'
+import { useAiStatus } from '@/hooks/useAi'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -61,13 +61,13 @@ export function TaskItem({ task, projectName, projectPath, showProjectBadge, pro
   const deleteTask = useDeleteTask()
   const queryClient = useQueryClient()
   const { hasSession: hasAiSession } = useAiSessions()
-  const { data: claudeStatus } = useClaudeStatus()
+  const { data: aiStatus } = useAiStatus()
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   // Subscribe to module-level improving state so it persists across tab switches
   useSyncExternalStore(_subscribe, _getSnapshot)
   const isAiImproving = _improvingTasks.has(task.id)
   const isAiResolving = hasAiSession(task.id)
-  const canAiImprove = !!(claudeStatus?.configured || claudeStatus?.cliAvailable)
+  const canAiImprove = !!(aiStatus?.configured || aiStatus?.cliAvailable)
 
   const priority = priorityConfig[task.priority] || priorityConfig.medium
   const status = statusConfig[task.status] || statusConfig.todo

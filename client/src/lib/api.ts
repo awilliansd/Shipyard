@@ -4,7 +4,7 @@ export interface AppSettings {
   tasksDir: string;
   selectedProjects: string[];
   aiAutoCommitEnabled: boolean;
-  aiCliRuntime: 'openclaude' | 'codex' | 'gemini';
+  aiCliRuntime: 'openclaude' | 'codex' | 'gemini' | 'omniroute';
 }
 
 interface RequestOptions extends RequestInit {
@@ -112,7 +112,7 @@ export const api = {
     ),
 
   // Terminals (native launchers)
-  launchTerminal: (projectId: string, type: string, runtime?: 'openclaude' | 'codex' | 'gemini', skipPermissions?: boolean) =>
+  launchTerminal: (projectId: string, type: string, runtime?: 'openclaude' | 'codex' | 'gemini' | 'omniroute', skipPermissions?: boolean) =>
     request('/terminals/launch', {
       method: 'POST',
       body: JSON.stringify({
@@ -130,7 +130,7 @@ export const api = {
     request<{ sessions: { id: string; projectId: string; type: string; title: string; createdAt: string }[] }>(
       `/terminal/sessions${projectId ? `?projectId=${projectId}` : ''}`
     ),
-  createTerminalSession: (projectId: string, type = 'shell', cols = 80, rows = 24, taskId?: string, prompt?: string, skipPermissions?: boolean, runtime?: 'openclaude' | 'codex' | 'gemini') =>
+  createTerminalSession: (projectId: string, type = 'shell', cols = 80, rows = 24, taskId?: string, prompt?: string, skipPermissions?: boolean, runtime?: 'openclaude' | 'codex' | 'gemini' | 'omniroute') =>
     request<{ id: string; projectId: string; type: string; title: string; createdAt: string; taskId?: string }>(
       '/terminal/sessions',
       { method: 'POST', body: JSON.stringify({ projectId, type, cols, rows, ...(taskId ? { taskId } : {}), ...(prompt ? { prompt } : {}), ...(skipPermissions !== undefined ? { skipPermissions } : {}), ...(runtime ? { runtime } : {}) }) }
@@ -187,7 +187,15 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ projectId, messages, providerId }) , timeout: 120_000 }
     ),
 
-  // Claude AI (Legacy - backward compatibility)
+  // AI status/config (uses legacy backend endpoints for compatibility)
+  getAiStatus: () => request<{ configured: boolean; cliAvailable: boolean; envKeyAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
+  saveAiApiConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
+    request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),
+  deleteAiApiConfig: () => request<{ ok: boolean }>('/claude/config', { method: 'DELETE' }),
+  testAiApiKey: (apiKey: string) =>
+    request<{ ok: boolean; error?: string }>('/claude/config/test', { method: 'POST', body: JSON.stringify({ apiKey }) }),
+
+  // Legacy aliases
   getClaudeStatus: () => request<{ configured: boolean; cliAvailable: boolean; envKeyAvailable: boolean; model: string | null; maxTokens: number | null }>('/claude/status'),
   saveClaudeConfig: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
     request<{ ok: boolean }>('/claude/config', { method: 'POST', body: JSON.stringify(data) }),

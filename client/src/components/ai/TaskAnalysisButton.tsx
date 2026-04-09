@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { useClaudeStatus, useAnalyzeTask } from '@/hooks/useClaude'
+import { useAiStatus, useAnalyzeTask } from '@/hooks/useAi'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { playAiCompleteSound } from '@/lib/sounds'
@@ -12,7 +12,7 @@ interface TaskAnalysisButtonProps {
 }
 
 export function TaskAnalysisButton({ projectId, taskId, title, onResult }: TaskAnalysisButtonProps) {
-  const { data: status } = useClaudeStatus()
+  const { data: status } = useAiStatus()
   const analyze = useAnalyzeTask()
 
   if (!status?.configured && !status?.cliAvailable) return null
@@ -39,7 +39,7 @@ export function TaskAnalysisButton({ projectId, taskId, title, onResult }: TaskA
       onClick={handleAnalyze}
       disabled={analyze.isPending || !title.trim()}
       className="gap-1.5 text-xs"
-      title="Use Claude AI to analyze this task and generate description/details"
+      title="Use AI to analyze this task and generate description/details"
     >
       {analyze.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
       AI Analyze

@@ -1,38 +1,38 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 
-export function useClaudeStatus() {
+export function useAiStatus() {
   return useQuery({
-    queryKey: ['claude', 'status'],
-    queryFn: () => api.getClaudeStatus(),
+    queryKey: ['ai', 'status'],
+    queryFn: () => api.getAiStatus(),
     staleTime: 30000,
   })
 }
 
-export function useSaveClaudeConfig() {
+export function useSaveAiApiConfig() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: { apiKey: string; model?: string; maxTokens?: number }) =>
-      api.saveClaudeConfig(data),
+      api.saveAiApiConfig(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['claude', 'status'] })
+      queryClient.invalidateQueries({ queryKey: ['ai', 'status'] })
     },
   })
 }
 
-export function useDeleteClaudeConfig() {
+export function useDeleteAiApiConfig() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api.deleteClaudeConfig(),
+    mutationFn: () => api.deleteAiApiConfig(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['claude', 'status'] })
+      queryClient.invalidateQueries({ queryKey: ['ai', 'status'] })
     },
   })
 }
 
-export function useTestClaudeKey() {
+export function useTestAiApiKey() {
   return useMutation({
-    mutationFn: (apiKey: string) => api.testClaudeKey(apiKey),
+    mutationFn: (apiKey: string) => api.testAiApiKey(apiKey),
   })
 }
 
@@ -43,13 +43,12 @@ export function useAnalyzeTask() {
   })
 }
 
-// SSE streaming chat
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }
 
-export async function streamChat(
+export async function streamAiChat(
   projectId: string | undefined,
   messages: ChatMessage[],
   onChunk: (text: string) => void,

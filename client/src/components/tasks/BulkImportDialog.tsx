@@ -3,7 +3,7 @@ import { Loader2, Sparkles, Trash2, Import } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useClaudeStatus } from '@/hooks/useClaude'
+import { useAiStatus } from '@/hooks/useAi'
 import { useCreateTask } from '@/hooks/useTasks'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -26,7 +26,7 @@ interface BulkImportDialogProps {
 }
 
 export function BulkImportDialog({ projectId, open, onOpenChange }: BulkImportDialogProps) {
-  const { data: claudeStatus } = useClaudeStatus()
+  const { data: aiStatus } = useAiStatus()
   const createTask = useCreateTask()
   const [rawText, setRawText] = useState('')
   const [tasks, setTasks] = useState<ParsedTask[]>([])
@@ -137,7 +137,7 @@ export function BulkImportDialog({ projectId, open, onOpenChange }: BulkImportDi
               disabled={state === 'analyzing'}
             />
             <div className="flex items-center gap-2">
-              {(claudeStatus?.configured || claudeStatus?.cliAvailable) && (
+              {(aiStatus?.configured || aiStatus?.cliAvailable) && (
                 <Button
                   size="sm"
                   className="gap-1.5 text-xs"

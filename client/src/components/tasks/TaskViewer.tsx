@@ -10,7 +10,7 @@ import { Pencil, Copy, AlertTriangle, ArrowUp, ArrowDown, Minus, Inbox, Loader, 
 import { cn } from '@/lib/utils'
 import { useUpdateTask, useDeleteTask, type Task } from '@/hooks/useTasks'
 import { buildTaskPrompt } from '@/lib/promptBuilder'
-import { useClaudeStatus, useAnalyzeTask } from '@/hooks/useClaude'
+import { useAiStatus, useAnalyzeTask } from '@/hooks/useAi'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { formatDistanceToNow } from 'date-fns'
@@ -50,10 +50,10 @@ export function TaskViewer({ task, projectName, projectPath, open, onOpenChange,
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
-  const { data: claudeStatus } = useClaudeStatus()
+  const { data: aiStatus } = useAiStatus()
   const analyzeTask = useAnalyzeTask()
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const canAiImprove = !!(claudeStatus?.configured || claudeStatus?.cliAvailable)
+  const canAiImprove = !!(aiStatus?.configured || aiStatus?.cliAvailable)
 
   // Clear "needs review" indicator when the user opens/views the task
   useEffect(() => {
