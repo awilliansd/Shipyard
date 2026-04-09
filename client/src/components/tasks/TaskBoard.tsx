@@ -31,7 +31,6 @@ import { useTerminalStatus } from '@/hooks/useTerminal'
 import { tasksToCSV, parseCSV, diffTasks, type CsvDiff } from '@/lib/csv'
 import { buildColumnPrompt } from '@/lib/promptBuilder'
 import { useAutoSync } from '@/hooks/useSheetSync'
-import { useAiStatus } from '@/hooks/useAi'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -289,7 +288,6 @@ export function TaskBoard({ projectId, projectName, projectPath, milestoneId, on
   const { isSyncing } = useAutoSync(projectId)
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings, staleTime: Infinity })
   const { data: terminalStatus } = useTerminalStatus()
-  const { data: aiStatus } = useAiStatus()
   const updateTask = useUpdateTask()
   const reorderTasks = useReorderTasks()
   const [editorOpen, setEditorOpen] = useState(false)
@@ -342,10 +340,6 @@ export function TaskBoard({ projectId, projectName, projectPath, milestoneId, on
   }
 
   const handleAiResolve = useCallback(async (task: Task) => {
-    if (!aiStatus?.cliAvailable) {
-      toast.info('AI resolve requires an available AI CLI runtime')
-      return
-    }
     if (!terminalStatus?.available) {
       toast.error('Integrated terminal required for AI resolution')
       return
@@ -361,7 +355,7 @@ export function TaskBoard({ projectId, projectName, projectPath, milestoneId, on
     } catch (err: any) {
       toast.error(err.message || 'Failed to start AI resolution')
     }
-  }, [projectId, terminalStatus, aiStatus?.cliAvailable, settings?.aiCliRuntime])
+  }, [projectId, terminalStatus, settings?.aiCliRuntime])
 
   const handleCsvExport = () => {
     if (!tasks?.length) { toast.info('No tasks to export'); return }
@@ -648,7 +642,7 @@ export function TaskBoard({ projectId, projectName, projectPath, milestoneId, on
                           projectPath={projectPath}
                           onEdit={handleEdit}
                           onView={handleView}
-                          onAiResolve={terminalStatus?.available && aiStatus?.cliAvailable ? handleAiResolve : undefined}
+                          onAiResolve={terminalStatus?.available ? handleAiResolve : undefined}
                         />
                       ))}
                       {isDoneCol && readDone.length > 0 && (
@@ -668,7 +662,7 @@ export function TaskBoard({ projectId, projectName, projectPath, milestoneId, on
                             projectPath={projectPath}
                             onEdit={handleEdit}
                             onView={handleView}
-                            onAiResolve={terminalStatus?.available && aiStatus?.cliAvailable ? handleAiResolve : undefined}
+                            onAiResolve={terminalStatus?.available ? handleAiResolve : undefined}
                           />
                         </div>
                       ))}
@@ -696,7 +690,7 @@ export function TaskBoard({ projectId, projectName, projectPath, milestoneId, on
                             projectPath={projectPath}
                             onEdit={handleEdit}
                             onView={handleView}
-                            onAiResolve={terminalStatus?.available && aiStatus?.cliAvailable ? handleAiResolve : undefined}
+                            onAiResolve={terminalStatus?.available ? handleAiResolve : undefined}
                           />
                         </div>
                       ))}
