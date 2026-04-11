@@ -1,6 +1,6 @@
 {
   "name": "dockyard",
-  "version": "1.5.9",
+  "version": "1.6.0",
   "description": "Local development dashboard for managing projects, tasks, git, and terminals",
   "author": {
     "name": "Dockyard Contributors",
@@ -32,7 +32,7 @@
   "devDependencies": {
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
-    "electron": "^35.0.1",
+    "electron": "^41.2.0",
     "electron-builder": "^26.0.12",
     "typescript": "^5.9.3"
   },
