@@ -235,7 +235,7 @@ export function TerminalPanel() {
     prompt?: string,
     taskNumber?: number,
     skipPermissions?: boolean,
-    runtime?: 'openclaude' | 'codex' | 'gemini' | 'omniroute',
+    runtime?: 'openclaude' | 'codex' | 'gemini',
   ) => {
     if (!status?.available) {
       toast.error('Integrated terminal not available')
@@ -529,7 +529,7 @@ export function TerminalPanel() {
 
   // Listen for dockyard:open-terminal events (from TerminalLauncher) for ANY project
   useEffect(() => {
-  const handler = (e: CustomEvent<{ projectId: string; type: string; taskId?: string; taskNumber?: number; prompt?: string; skipPermissions?: boolean; runtime?: 'openclaude' | 'codex' | 'gemini' | 'omniroute' }>) => {
+  const handler = (e: CustomEvent<{ projectId: string; type: string; taskId?: string; taskNumber?: number; prompt?: string; skipPermissions?: boolean; runtime?: 'openclaude' | 'codex' | 'gemini' }>) => {
       handleNewTab(
         e.detail.type,
         e.detail.projectId,
