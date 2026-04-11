@@ -5,7 +5,7 @@ import { platform } from 'os';
 import { getSettings } from './settingsStore.js';
 
 export type TerminalType = 'assistant' | 'dev' | 'shell';
-type AiCliRuntime = 'openclaude' | 'codex' | 'gemini' | 'omniroute';
+type AiCliRuntime = 'openclaude' | 'codex' | 'gemini';
 
 const os = platform();
 
@@ -16,23 +16,21 @@ const typeLabel: Record<TerminalType, string> = {
 };
 
 function normalizeRuntime(runtime?: string): AiCliRuntime {
-  if (runtime === 'openclaude' || runtime === 'codex' || runtime === 'gemini' || runtime === 'omniroute') return runtime;
+  if (runtime === 'openclaude' || runtime === 'codex' || runtime === 'gemini') return runtime;
   const configured = getSettings().aiCliRuntime;
-  if (configured === 'openclaude' || configured === 'codex' || configured === 'gemini' || configured === 'omniroute') return configured;
+  if (configured === 'openclaude' || configured === 'codex' || configured === 'gemini') return configured;
   return 'openclaude';
 }
 
 function runtimeLabel(runtime: AiCliRuntime): string {
   if (runtime === 'codex') return 'Codex';
   if (runtime === 'gemini') return 'Gemini';
-  if (runtime === 'omniroute') return 'OmniRoute';
   return 'Open Claude';
 }
 
 function buildAssistantCommand(runtime: AiCliRuntime, useSkip: boolean): string {
   if (runtime === 'codex') return 'codex';
   if (runtime === 'gemini') return 'gemini';
-  if (runtime === 'omniroute') return 'omniroute';
   return useSkip ? 'openclaude --dangerously-skip-permissions' : 'openclaude';
 }
 
