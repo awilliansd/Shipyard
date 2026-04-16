@@ -1,6 +1,6 @@
 {
   "name": "dockyard",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Local development dashboard for managing projects, tasks, git, and terminals",
   "author": {
     "name": "Dockyard Contributors",
@@ -39,6 +39,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@google/generative-ai": "^0.13.0",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3",
     "jose": "^6.2.1",
     "openai": "^4.0.0"
   }
