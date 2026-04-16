@@ -15,8 +15,34 @@ exports.default = async function (context) {
     return;
   }
 
-  // Install deps inside server/ using its own package.json
-  // (don't install at app root — that would overwrite the root package.json Electron needs)
+  const installProdDeps = (targetDir, label) => {
+    console.log(`[afterPack] Installing ${label} production dependencies in:`, targetDir);
+    try {
+      execSync('npm install --omit=dev --ignore-scripts', {
+        cwd: targetDir,
+        stdio: 'inherit',
+        timeout: 120000,
+      });
+      console.log(`[afterPack] ${label} dependencies installed successfully`);
+    } catch (err) {
+      console.error(`[afterPack] npm install failed for ${label}:`, err.message);
+      execSync('npm install --omit=dev --no-optional --ignore-scripts', {
+        cwd: targetDir,
+        stdio: 'inherit',
+        timeout: 120000,
+      });
+      console.log(`[afterPack] ${label} dependencies installed (without optional)`);
+    }
+  };
+
+  // Install root app deps first (electron-updater/electron-log run in main process).
+  if (!existsSync(path.join(appDir, 'package.json'))) {
+    console.log('[afterPack] No root package.json found, skipping root dependency install');
+  } else {
+    installProdDeps(appDir, 'root app');
+  }
+
+  // Install deps inside server/ using its own package.json.
   const serverDir = path.join(appDir, 'server');
 
   if (!existsSync(path.join(serverDir, 'package.json'))) {
@@ -24,28 +50,5 @@ exports.default = async function (context) {
     return;
   }
 
-  console.log('[afterPack] Installing server production dependencies in:', serverDir);
-
-  try {
-    execSync('npm install --omit=dev --ignore-scripts', {
-      cwd: serverDir,
-      stdio: 'inherit',
-      timeout: 120000,
-    });
-    console.log('[afterPack] Dependencies installed successfully');
-  } catch (err) {
-    console.error('[afterPack] npm install failed:', err.message);
-    // Try without optional (node-pty might fail on some systems)
-    try {
-      execSync('npm install --omit=dev --no-optional --ignore-scripts', {
-        cwd: serverDir,
-        stdio: 'inherit',
-        timeout: 120000,
-      });
-      console.log('[afterPack] Dependencies installed (without optional)');
-    } catch (err2) {
-      console.error('[afterPack] CRITICAL: Could not install dependencies');
-      throw err2;
-    }
-  }
+  installProdDeps(serverDir, 'server');
 };

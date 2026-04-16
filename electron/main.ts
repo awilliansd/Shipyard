@@ -3,6 +3,9 @@ import { join, resolve } from 'path';
 import { existsSync, mkdirSync, appendFileSync, readFileSync } from 'fs';
 import { spawn, type ChildProcess } from 'child_process';
 import http from 'http';
+import { autoUpdater } from 'electron-updater';
+import log from 'electron-log';
+import type { MessageBoxOptions, MessageBoxReturnValue } from 'electron';
 
 // ── Paths ──────────────────────────────────────────────────────────
 
@@ -204,6 +207,7 @@ let splashWindow: BrowserWindow | null = null;
 let restartInProgress = false;
 let restartTimestamps: number[] = [];
 let lastServerErrorHint: string | null = null;
+let updateCheckInterval: NodeJS.Timeout | null = null;
 
 function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
@@ -226,6 +230,97 @@ function logElectron(msg: string, err?: unknown) {
 function isPortInUseError(msg: string) {
   const lower = msg.toLowerCase();
   return lower.includes('eaddrinuse') || lower.includes('already in use') || (lower.includes('port') && lower.includes('in use'));
+}
+
+function showMessageBoxSafe(options: MessageBoxOptions): Promise<MessageBoxReturnValue> {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return dialog.showMessageBox(mainWindow, options);
+  }
+  return dialog.showMessageBox(options);
+}
+
+async function checkForAppUpdates(userInitiated = false) {
+  if (!app.isPackaged || isDev) {
+    if (userInitiated) {
+      await showMessageBoxSafe({
+        type: 'info',
+        title: 'Updates unavailable',
+        message: 'Update checks are available only in packaged builds.'
+      });
+    }
+    return;
+  }
+
+  try {
+    await autoUpdater.checkForUpdates();
+    log.info('[auto-update] Manual/automatic check executed.');
+  } catch (error) {
+    log.error('[auto-update] Failed to check for updates:', error);
+    if (userInitiated) {
+      await showMessageBoxSafe({
+        type: 'error',
+        title: 'Update check failed',
+        message: 'Could not check for updates right now.',
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
+
+function setupAutoUpdater() {
+  if (!app.isPackaged || isDev) return;
+
+  log.transports.file.level = 'info';
+  autoUpdater.logger = log;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    log.info('[auto-update] Checking for updates...');
+  });
+
+  autoUpdater.on('update-available', (info: { version?: string }) => {
+    log.info('[auto-update] Update available:', info?.version);
+  });
+
+  autoUpdater.on('update-not-available', (info: { version?: string }) => {
+    log.info('[auto-update] No update available:', info?.version);
+  });
+
+  autoUpdater.on('download-progress', (progress: { percent?: number }) => {
+    log.info('[auto-update] Download progress:', Number(progress.percent ?? 0).toFixed(2) + '%');
+  });
+
+  autoUpdater.on('error', (error: unknown) => {
+    log.error('[auto-update] Updater error:', error);
+  });
+
+  autoUpdater.on('update-downloaded', async (info: { version?: string }) => {
+    const result = await showMessageBoxSafe({
+      type: 'info',
+      buttons: ['Restart now', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Update ready',
+      message: `Version ${info?.version ?? 'latest'} is ready to install.`,
+      detail: 'Restart Dockyard to finish applying the update.'
+    });
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall(false, true);
+    }
+  });
+
+  setTimeout(() => {
+    checkForAppUpdates(false).catch((error) => {
+      log.error('[auto-update] Initial update check failed:', error);
+    });
+  }, 10000);
+
+  updateCheckInterval = setInterval(() => {
+    checkForAppUpdates(false).catch((error) => {
+      log.error('[auto-update] Scheduled update check failed:', error);
+    });
+  }, 6 * 60 * 60 * 1000);
 }
 
 function getTargetUrl() {
@@ -557,6 +652,13 @@ function createAppMenu() {
       role: 'help',
       submenu: [
         {
+          label: 'Check for Updates',
+          click: async () => {
+            await checkForAppUpdates(true);
+          }
+        },
+        { type: 'separator' },
+        {
           label: 'Documentation',
           click: async () => {
             mainWindow?.webContents.send('menu-event', 'navigate-help');
@@ -681,6 +783,10 @@ if (!gotTheLock) {
 
   app.on('before-quit', () => {
     isQuitting = true;
+    if (updateCheckInterval) {
+      clearInterval(updateCheckInterval);
+      updateCheckInterval = null;
+    }
     stopServer();
   });
 
@@ -698,6 +804,7 @@ if (!gotTheLock) {
       }
       createWindow(targetUrl);
       createTray();
+      setupAutoUpdater();
     } catch (err) {
       logElectron('[Electron] Failed to start:', err);
       dialog.showErrorBox(

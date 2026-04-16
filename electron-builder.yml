@@ -51,6 +51,8 @@ mac:
   target:
     - target: dmg
       arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
   icon: assets/icon.icns
   category: public.app-category.developer-tools
   artifactName: "${productName}-${version}-${arch}.${ext}"
@@ -93,3 +95,9 @@ deb:
     - libxss1
     - libxtst6
     - xdg-utils
+
+publish:
+  - provider: github
+    owner: awilliansd
+    repo: dockyard
+    releaseType: release
