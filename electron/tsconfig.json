@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "sourceMap": true
   },
-  "include": ["main.ts", "preload.ts"]
+  "include": ["main.ts", "preload.ts", "modules/**/*.ts"]
 }

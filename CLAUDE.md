@@ -149,6 +149,7 @@ Os timestamps sao cascading — etapas posteriores preenchem as anteriores autom
 - Data path: `%APPDATA%/Dockyard/data` em prod, `./data` em dev
 - Centralizado em `server/src/services/dataDir.ts`
 - asar desabilitado, afterPack reinstala deps via npm (pnpm symlinks nao sobrevivem)
+- main.ts refatorado em modulos: `modules/paths.ts`, `modules/logger.ts`, `modules/serverProcess.ts`, `modules/updater.ts`, `modules/window.ts`, `modules/tray.ts`, `modules/menu.ts`
 
 ### Google Sheets Sync
 - Config em **localStorage** apenas (`dockyard:sync:{projectId}`) — backend e proxy stateless

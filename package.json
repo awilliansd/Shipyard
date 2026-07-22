@@ -1,12 +1,15 @@
 {
   "name": "dockyard",
-  "version": "1.6.8",
+  "version": "2.2.0",
   "description": "Local development dashboard for managing projects, tasks, git, and terminals",
   "author": {
     "name": "Dockyard Contributors",
     "email": "adcoderio@gmail.com"
   },
   "main": "electron/dist/main.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"pnpm --filter dockyard-server dev\" \"pnpm --filter dockyard-client dev\"",
     "dev:electron": "concurrently -n electron,client -c cyan,green \"pnpm electron:dev\" \"pnpm --filter dockyard-client dev\"",
@@ -21,27 +24,18 @@
     "dist:linux": "pnpm build && electron-builder --linux --publish never --config electron-builder.yml",
     "bump": "node scripts/bump-version.mjs"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "esbuild",
-      "node-pty",
-      "electron",
-      "electron-winstaller"
-    ]
-  },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
-    "electron": "^41.2.0",
-    "electron-builder": "^26.0.12",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@google/generative-ai": "^0.13.0",
     "electron-log": "^5.4.3",
-    "electron-updater": "^6.8.3",
+    "electron-updater": "^6.8.9",
     "jose": "^6.2.1",
     "openai": "^4.0.0"
   }

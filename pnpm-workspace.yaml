@@ -2,6 +2,18 @@ packages:
   - client
   - server
 
-ignoredBuiltDependencies:
+allowBuilds:
+  '@swc/core': true
+  electron-winstaller: true
+  esbuild: true
+  node-pty: true
+
+onlyBuiltDependencies:
   - '@swc/core'
+  - electron
+  - electron-winstaller
   - esbuild
+  - node-pty
+
+minimumReleaseAgeExclude:
+  - electron@43.2.0
